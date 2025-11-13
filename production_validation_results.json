@@ -1,0 +1,22 @@
+{
+  "configuration": {
+    "data_months": 6,
+    "n_folds": 0,
+    "train_days": 90,
+    "val_days": 30,
+    "test_days": 30
+  },
+  "rolling_results": [],
+  "aggregated": {
+    "mean_sharpe_improvement": null,
+    "std_sharpe_improvement": null,
+    "mean_net_sharpe": null,
+    "min_net_sharpe": null,
+    "max_net_sharpe": null
+  },
+  "statistical_tests": {
+    "t_statistic": null,
+    "p_value": null,
+    "significant": null
+  }
+}
