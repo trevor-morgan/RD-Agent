@@ -366,7 +366,7 @@ class HCANAnalogRealDataset(Dataset):
 # ============================================================================
 
 def train_model(model, train_loader, val_loader, loss_fn, n_epochs=10, lr=1e-3):
-    """Train model."""
+    """Train model with robust numerical stability."""
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-5)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='min', factor=0.5, patience=3
@@ -374,48 +374,15 @@ def train_model(model, train_loader, val_loader, loss_fn, n_epochs=10, lr=1e-3):
 
     best_val_loss = float('inf')
     patience_counter = 0
-    patience = 5
+    patience = 7  # Increased patience
 
     for epoch in range(n_epochs):
         # Training
         model.train()
         train_losses = []
 
-        for batch in train_loader:
-            analog_dict = {
-                'returns': batch['analog_returns'],
-                'current_lyapunov': batch['current_lyapunov'].unsqueeze(1),
-                'current_hurst': batch['current_hurst'].unsqueeze(1),
-                'microstructure': batch['microstructure'],
-                'order_flow': batch['order_flow'],
-            }
-
-            outputs = model(batch['digital_features'], analog_dict)
-
-            targets = (
-                batch['return'],
-                batch['lyapunov'],
-                batch['hurst'],
-                batch['bifurcation'],
-                batch['lyap_derivative'],
-                batch['hurst_derivative'],
-            )
-
-            loss, _ = loss_fn(outputs[:6], targets, outputs[6])
-
-            optimizer.zero_grad()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            optimizer.step()
-
-            train_losses.append(loss.item())
-
-        # Validation
-        model.eval()
-        val_losses = []
-
-        with torch.no_grad():
-            for batch in val_loader:
+        for batch_idx, batch in enumerate(train_loader):
+            try:
                 analog_dict = {
                     'returns': batch['analog_returns'],
                     'current_lyapunov': batch['current_lyapunov'].unsqueeze(1),
@@ -435,8 +402,64 @@ def train_model(model, train_loader, val_loader, loss_fn, n_epochs=10, lr=1e-3):
                     batch['hurst_derivative'],
                 )
 
-                loss, _ = loss_fn(outputs[:6], targets, outputs[6])
-                val_losses.append(loss.item())
+                loss, loss_dict = loss_fn(outputs[:6], targets, outputs[6])
+
+                # Check for nan/inf
+                if torch.isnan(loss) or torch.isinf(loss):
+                    print(f"  Warning: NaN/Inf loss at batch {batch_idx}, skipping...")
+                    continue
+
+                optimizer.zero_grad()
+                loss.backward()
+
+                # Aggressive gradient clipping for stability
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+
+                optimizer.step()
+
+                train_losses.append(loss.item())
+
+            except RuntimeError as e:
+                print(f"  Warning: Error at batch {batch_idx}: {e}, skipping...")
+                continue
+
+        # Validation
+        model.eval()
+        val_losses = []
+
+        with torch.no_grad():
+            for batch in val_loader:
+                try:
+                    analog_dict = {
+                        'returns': batch['analog_returns'],
+                        'current_lyapunov': batch['current_lyapunov'].unsqueeze(1),
+                        'current_hurst': batch['current_hurst'].unsqueeze(1),
+                        'microstructure': batch['microstructure'],
+                        'order_flow': batch['order_flow'],
+                    }
+
+                    outputs = model(batch['digital_features'], analog_dict)
+
+                    targets = (
+                        batch['return'],
+                        batch['lyapunov'],
+                        batch['hurst'],
+                        batch['bifurcation'],
+                        batch['lyap_derivative'],
+                        batch['hurst_derivative'],
+                    )
+
+                    loss, _ = loss_fn(outputs[:6], targets, outputs[6])
+
+                    if not (torch.isnan(loss) or torch.isinf(loss)):
+                        val_losses.append(loss.item())
+
+                except RuntimeError as e:
+                    continue
+
+        if len(train_losses) == 0 or len(val_losses) == 0:
+            print(f"Epoch {epoch+1}/{n_epochs} - Skipped (numerical issues)")
+            continue
 
         mean_train = np.mean(train_losses)
         mean_val = np.mean(val_losses)

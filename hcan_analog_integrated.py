@@ -581,9 +581,11 @@ class AnalogChaosLoss(nn.Module):
         # 2. Chaos metric losses
         loss_lyap = F.mse_loss(pred_lyap, target_lyap) if target_lyap is not None else 0.0
         loss_hurst = F.mse_loss(pred_hurst, target_hurst) if target_hurst is not None else 0.0
-        # Clip bifurcation predictions to valid range [0, 1]
-        pred_bifurc_clipped = torch.clamp(pred_bifurc, 0.0, 1.0)
-        loss_bifurc = F.binary_cross_entropy(pred_bifurc_clipped, target_bifurc) if target_bifurc is not None else 0.0
+        # Clip bifurcation predictions to valid range with epsilon for numerical stability
+        eps = 1e-7
+        pred_bifurc_clipped = torch.clamp(pred_bifurc, eps, 1.0 - eps)
+        target_bifurc_clipped = torch.clamp(target_bifurc, eps, 1.0 - eps)
+        loss_bifurc = F.binary_cross_entropy(pred_bifurc_clipped, target_bifurc_clipped) if target_bifurc is not None else 0.0
 
         # 3. NEW: Analog derivative losses
         loss_lyap_deriv = F.mse_loss(pred_lyap_deriv, target_lyap_deriv) if target_lyap_deriv is not None else 0.0
