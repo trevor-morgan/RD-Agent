@@ -1,0 +1,14 @@
+{
+  "selective": {
+    "avg_return": -0.009753458407515467,
+    "avg_sharpe": -0.1825094860244767,
+    "avg_activity": 0.2390965732087227,
+    "positive_folds": "2/3"
+  },
+  "baseline": {
+    "avg_return": 0.010211414873030067,
+    "avg_sharpe": 0.11723547759119413,
+    "positive_folds": "1/3"
+  },
+  "improvement": -0.019964873280545532
+}

@@ -1,0 +1,13 @@
+{
+  "improved": {
+    "avg_return": 0.014138911947670363,
+    "avg_sharpe": -0.1878124479049461,
+    "positive_folds": "1/3"
+  },
+  "baseline": {
+    "avg_return": 0.010127190063869787,
+    "avg_sharpe": 0.1169710473378404,
+    "positive_folds": "1/3"
+  },
+  "improvement": 0.0040117218838005755
+}

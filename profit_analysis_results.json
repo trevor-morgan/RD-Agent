@@ -1,0 +1,48 @@
+{
+  "fold_characteristics": [
+    {
+      "fold": 1,
+      "mean_return": 7.076993601746548e-05,
+      "volatility": 0.0009718398550648536,
+      "skewness": 4.411385243653805,
+      "kurtosis": 48.1432085819801,
+      "trend_strength": 0.03036030255149269,
+      "regime_low_pct": 0.5361305361305362,
+      "regime_med_pct": 0.1864801864801865,
+      "regime_high_pct": 0.2773892773892774,
+      "mr_opportunity": 0.5087719298245614,
+      "mom_opportunity": 0.4727272727272727,
+      "n_extreme": "22"
+    },
+    {
+      "fold": 2,
+      "mean_return": -2.0364925010144365e-05,
+      "volatility": 0.001592575357704582,
+      "skewness": -1.0239696416288993,
+      "kurtosis": 45.202588406315265,
+      "trend_strength": 0.008736552829351908,
+      "regime_low_pct": 0.23543123543123542,
+      "regime_med_pct": 0.4382284382284382,
+      "regime_high_pct": 0.32634032634032634,
+      "mr_opportunity": 0.5037037037037037,
+      "mom_opportunity": 0.5494505494505495,
+      "n_extreme": "22"
+    },
+    {
+      "fold": 3,
+      "mean_return": -2.519205942101457e-05,
+      "volatility": 0.0011544323766033329,
+      "skewness": 1.4318086400687289,
+      "kurtosis": 36.69026838484572,
+      "trend_strength": 0.010807393491615244,
+      "regime_low_pct": 0.331002331002331,
+      "regime_med_pct": 0.41025641025641024,
+      "regime_high_pct": 0.25874125874125875,
+      "mr_opportunity": 0.5283018867924528,
+      "mom_opportunity": 0.5833333333333334,
+      "n_extreme": "22"
+    }
+  ],
+  "winner": "Fold 2",
+  "winner_return_improvement": "+81.52%"
+}

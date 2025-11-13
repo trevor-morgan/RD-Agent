@@ -1,0 +1,47 @@
+{
+  "avg_return": -0.009089306541487886,
+  "avg_sharpe": -1.2491722941003671,
+  "avg_win_rate": 0.4139072847682119,
+  "positive_folds": "0/3",
+  "folds": [
+    {
+      "total_return": -0.009087633228179959,
+      "sharpe": -1.2494386294557769,
+      "win_rate": 0.4139072847682119,
+      "total_costs": 0.0047115035227284115,
+      "turnover": 23.557517613642062,
+      "n_trades": 302,
+      "strategies": {
+        "mean_reversion": 302,
+        "momentum": 0,
+        "neutral": 0
+      }
+    },
+    {
+      "total_return": -0.009090419076747774,
+      "sharpe": -1.248908379175589,
+      "win_rate": 0.4139072847682119,
+      "total_costs": 0.004711792019078833,
+      "turnover": 23.55896009539417,
+      "n_trades": 302,
+      "strategies": {
+        "mean_reversion": 302,
+        "momentum": 0,
+        "neutral": 0
+      }
+    },
+    {
+      "total_return": -0.009089867319535927,
+      "sharpe": -1.2491698736697356,
+      "win_rate": 0.4139072847682119,
+      "total_costs": 0.004712451614962653,
+      "turnover": 23.562258074813265,
+      "n_trades": 302,
+      "strategies": {
+        "mean_reversion": 302,
+        "momentum": 0,
+        "neutral": 0
+      }
+    }
+  ]
+}

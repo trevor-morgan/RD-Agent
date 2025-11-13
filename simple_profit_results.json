@@ -1,0 +1,13 @@
+{
+  "adaptive": {
+    "avg_return": 0.05199340823449384,
+    "avg_sharpe": -0.029568189899932335,
+    "positive_folds": "1/3"
+  },
+  "baseline": {
+    "avg_return": 0.010127190063869787,
+    "avg_sharpe": 0.1169710473378404,
+    "positive_folds": "1/3"
+  },
+  "improvement": 0.04186621817062405
+}
