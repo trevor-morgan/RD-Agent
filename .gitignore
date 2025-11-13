@@ -182,4 +182,6 @@ static/
 # AI assistant
 .cursor/
 .claude/
-AGENTS.md
+AGENTS.md# Phase 1 intermediate checkpoints (use best_val_ic.pt)
+checkpoints_extended/best_val_loss.pt
+checkpoints_extended/checkpoint_epoch_*.pt
