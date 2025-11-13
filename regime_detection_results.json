@@ -1,0 +1,83 @@
+{
+  "walk_forward": {
+    "random_forest": {
+      "model_name": "Random Forest",
+      "accuracy": 0.6185567010309279,
+      "baseline_accuracy": 0.3649484536082474,
+      "improvement": 0.25360824742268046,
+      "per_class_accuracy": {
+        "low_vol": 0.7123287671232876,
+        "medium_vol": 0.3502824858757062,
+        "high_vol": 0.8271604938271605
+      },
+      "confusion_matrix": [
+        [
+          104,
+          29,
+          13
+        ],
+        [
+          70,
+          62,
+          45
+        ],
+        [
+          13,
+          15,
+          134
+        ]
+      ],
+      "feature_importance": {
+        "lyapunov": 0.346542145126256,
+        "hurst": 0.013393888027789349,
+        "recent_vol": 0.21608656472152726,
+        "recent_abs_return": 0.15634783539025585,
+        "wavelet_energy": 0.1070033635356801,
+        "vol_of_vol": 0.16062620319849147
+      }
+    },
+    "gradient_boosting": {
+      "model_name": "Gradient Boosting",
+      "accuracy": 0.5917525773195876,
+      "baseline_accuracy": 0.3649484536082474,
+      "improvement": 0.22680412371134023,
+      "per_class_accuracy": {
+        "low_vol": 0.5958904109589042,
+        "medium_vol": 0.4011299435028249,
+        "high_vol": 0.7962962962962963
+      },
+      "confusion_matrix": [
+        [
+          87,
+          49,
+          10
+        ],
+        [
+          63,
+          71,
+          43
+        ],
+        [
+          13,
+          20,
+          129
+        ]
+      ],
+      "feature_importance": {
+        "lyapunov": 0.30957552107470954,
+        "hurst": 0.013066576047046332,
+        "recent_vol": 0.2508495803039359,
+        "recent_abs_return": 0.12815341040898043,
+        "wavelet_energy": 0.12712518561489822,
+        "vol_of_vol": 0.17122972655042965
+      }
+    },
+    "n_train": 1129,
+    "n_test": 485
+  },
+  "neural_network": {
+    "train_accuracy": 0.42426925897598267,
+    "test_accuracy": 0.30103092783505153,
+    "n_parameters": 387
+  }
+}
