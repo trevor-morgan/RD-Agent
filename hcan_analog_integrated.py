@@ -170,8 +170,14 @@ class AnalogFeatureAggregator(nn.Module):
 
         if 'current_hurst' in analog_dict:
             # Simplified: Use direct values, expand to horizon
-            hurst_val = analog_dict['current_hurst']  # [B, 1]
-            hurst_evol = hurst_val.repeat(1, self.chaos_horizon)  # [B, horizon]
+            hurst_val = analog_dict['current_hurst']  # Could be [B], [B, 1], or [B, 1, 1]
+            # Flatten to [B, 1]
+            while len(hurst_val.shape) > 2:
+                hurst_val = hurst_val.squeeze(-1)
+            if len(hurst_val.shape) == 1:
+                hurst_val = hurst_val.unsqueeze(1)
+            # Now hurst_val is [B, 1], expand along dim 1 to get [B, horizon]
+            hurst_evol = hurst_val.expand(-1, self.chaos_horizon)  # [B, horizon]
             features.append(hurst_evol)
 
         # 3. Microstructure
@@ -575,7 +581,9 @@ class AnalogChaosLoss(nn.Module):
         # 2. Chaos metric losses
         loss_lyap = F.mse_loss(pred_lyap, target_lyap) if target_lyap is not None else 0.0
         loss_hurst = F.mse_loss(pred_hurst, target_hurst) if target_hurst is not None else 0.0
-        loss_bifurc = F.binary_cross_entropy(pred_bifurc, target_bifurc) if target_bifurc is not None else 0.0
+        # Clip bifurcation predictions to valid range [0, 1]
+        pred_bifurc_clipped = torch.clamp(pred_bifurc, 0.0, 1.0)
+        loss_bifurc = F.binary_cross_entropy(pred_bifurc_clipped, target_bifurc) if target_bifurc is not None else 0.0
 
         # 3. NEW: Analog derivative losses
         loss_lyap_deriv = F.mse_loss(pred_lyap_deriv, target_lyap_deriv) if target_lyap_deriv is not None else 0.0
