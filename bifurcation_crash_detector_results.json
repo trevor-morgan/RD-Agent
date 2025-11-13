@@ -1,0 +1,20 @@
+{
+  "crash_prediction": {
+    "bifurcation_extreme_ic_lag1": 0.015413494116941191
+  },
+  "portfolio_backtest": {
+    "dynamic_sharpe": 0.07513134572104556,
+    "baseline_sharpe": -0.2272942128168895,
+    "dynamic_max_dd": -0.03435312442550813,
+    "baseline_max_dd": -0.03892807169359003,
+    "avg_position_size": 0.8009601757451558,
+    "position_volatility": 0.3989225767085636,
+    "dynamic_cumulative_return": 0.003394819425736481,
+    "baseline_cumulative_return": -0.01262649263117055
+  },
+  "calibrated_thresholds": {
+    "bifurcation_high": 0.0027420565020292997,
+    "bifurcation_low": 0.001254569971933961,
+    "entropy_high": 6.928737163543701
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "psychology_analysis": {
+    "consciousness": {
+      "current_return_ic": 0.037780247578881786,
+      "future_return_ics": {
+        "lag_1": 0.030006050823745058,
+        "lag_2": -0.006824073447538854,
+        "lag_3": 0.01380522939988347,
+        "lag_5": 0.0016947428102804625,
+        "lag_10": 0.015007211128969024
+      },
+      "future_volatility_ics": {
+        "vol_lag_5": 0.010872074563771405,
+        "vol_lag_10": -0.01898737329630089
+      },
+      "mean_consciousness": 0.31655666894998397,
+      "std_consciousness": 0.0028516442991784424
+    },
+    "bifurcation": {
+      "extreme_event_ics": {
+        "lag_1": 0.05326096288957012,
+        "lag_2": 0.036243216637165045,
+        "lag_3": 0.019159969073927648,
+        "lag_5": 0.01350737639865725,
+        "lag_10": -0.02753316151109056
+      },
+      "bifurcation_before_extreme": 0.0018838904970497996,
+      "bifurcation_normal": 0.0019732831857475195,
+      "n_extreme_events": "81"
+    },
+    "entropy": {
+      "abs_return_ic": -0.06176747926698287,
+      "future_volatility_ics": {
+        "lag_5": 0.02127304648048655,
+        "lag_10": 0.028845070318365112
+      },
+      "mean_entropy": 6.811734635295182,
+      "std_entropy": 0.22127138340835156
+    }
+  },
+  "strategy_failure": {
+    "failure_rates": {
+      "mean_reversion": 0.4990583804143126,
+      "momentum": 0.4883866917765223,
+      "trend_following": 0.480225988700565,
+      "volatility": 0.5053358443188951
+    },
+    "mean_pnls": {
+      "mean_reversion": -9.391257969373551e-05,
+      "momentum": 9.391257969373551e-05,
+      "trend_following": 0.00014229706854935624,
+      "volatility": -9.122099730112688e-05
+    }
+  },
+  "meta_learner": {
+    "n_models_trained": 4,
+    "strategies": [
+      "momentum",
+      "trend_following",
+      "mean_reversion",
+      "volatility"
+    ]
+  }
+}
