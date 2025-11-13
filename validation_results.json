@@ -1,0 +1,38 @@
+{
+  "walk_forward": {
+    "train_period": "2025-10-14 to 2025-10-29",
+    "test_period": "2025-10-30 to 2025-11-13",
+    "best_val_ic": 0.1668954387684919,
+    "test_ic": -0.07454772649789404,
+    "test_mse": 3.676419282783172e-06,
+    "n_train": 604,
+    "n_test": 678
+  },
+  "regime_validation": {
+    "high_volatility": -0.039426902382166756,
+    "low_volatility": 0.022216830532755836
+  },
+  "transaction_costs": {
+    "gross_sharpe": -1.654187168035431,
+    "net_sharpe": -2.679025221153989,
+    "cost_impact_pct": -61.95417743058004
+  },
+  "statistical_tests": {
+    "bootstrap": {
+      "ic": -0.07180255978709457,
+      "ci_lower": -0.18636857728067918,
+      "ci_upper": 0.038840592687908945,
+      "standard_error": 0.057166857133966034,
+      "p_value": 0.196,
+      "n_samples": 300,
+      "n_bootstrap": 1000
+    },
+    "permutation": {
+      "ic_observed": -0.07180255978709457,
+      "null_mean": 0.000715881281739221,
+      "null_std": 0.056152473610308395,
+      "p_value": 0.21,
+      "n_permutations": 1000
+    }
+  }
+}
