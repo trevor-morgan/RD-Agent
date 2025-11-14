@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semantic Space Trading - AI-Powered Market Predictions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 1.3em;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 15px 40px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: transform 0.3s;
+        }
+
+        .cta-button:hover {
+            transform: scale(1.05);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .feature {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .feature h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .pricing {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin: 60px 0;
+        }
+
+        .pricing-card {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 3px solid transparent;
+            transition: border-color 0.3s;
+        }
+
+        .pricing-card:hover {
+            border-color: #667eea;
+        }
+
+        .pricing-card.featured {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .pricing-card h3 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+        .pricing-card .price {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #667eea;
+            margin: 20px 0;
+        }
+
+        .pricing-card ul {
+            list-style: none;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .pricing-card li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .pricing-card li:before {
+            content: "✓ ";
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .stats {
+            background: #667eea;
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            max-width: 1200px;
+            margin: 40px auto;
+        }
+
+        .stat-item h4 {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .stat-item p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        footer {
+            background: #2d3748;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 50px;
+            color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>Semantic Space Trading</h1>
+        <p>AI-powered market predictions using transformer neural networks</p>
+        <a href="#pricing" class="cta-button">Start Trading Smarter</a>
+    </div>
+
+    <div class="container">
+        <h2 class="section-title">Why Semantic Space?</h2>
+
+        <div class="features">
+            <div class="feature">
+                <h3>🧠 Advanced AI Architecture</h3>
+                <p>Multi-head transformer network with 3.78M parameters trained on 10 years of market data. Captures complex semantic relationships between assets that traditional models miss.</p>
+            </div>
+
+            <div class="feature">
+                <h3>📊 Proven Performance</h3>
+                <p>Information Coefficient (IC) of 1.52% on out-of-sample validation. Consistently outperforms random predictions with statistical significance.</p>
+            </div>
+
+            <div class="feature">
+                <h3>⚡ Real-Time Predictions</h3>
+                <p>Daily predictions for 23 major tickers including tech giants, financials, consumer goods, energy, and major ETFs. API updates every market day.</p>
+            </div>
+
+            <div class="feature">
+                <h3>🔬 Semantic Embeddings</h3>
+                <p>Revolutionary approach that embeds assets in high-dimensional semantic space, capturing hidden correlations and market regimes invisible to traditional analysis.</p>
+            </div>
+
+            <div class="feature">
+                <h3>📈 Multi-Scale Learning</h3>
+                <p>Attention mechanism learns patterns across multiple timeframes simultaneously, adapting to both short-term momentum and long-term trends.</p>
+            </div>
+
+            <div class="feature">
+                <h3>🛡️ Risk-Aware</h3>
+                <p>Built-in transaction cost modeling, volatility awareness, and correlation analysis. Not just predictions - actionable trading signals with confidence scores.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats">
+        <h2 style="font-size: 2.5em; margin-bottom: 20px;">By The Numbers</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <h4>1.52%</h4>
+                <p>Information Coefficient</p>
+            </div>
+            <div class="stat-item">
+                <h4>3.78M</h4>
+                <p>Model Parameters</p>
+            </div>
+            <div class="stat-item">
+                <h4>10 Years</h4>
+                <p>Training Data</p>
+            </div>
+            <div class="stat-item">
+                <h4>23</h4>
+                <p>Tickers Covered</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2 class="section-title" id="pricing">Choose Your Plan</h2>
+
+        <div class="pricing">
+            <div class="pricing-card">
+                <h3>Starter</h3>
+                <div class="price">$2,500<span style="font-size: 0.4em; color: #666;">/month</span></div>
+                <ul>
+                    <li>10 tickers (major tech + SPY)</li>
+                    <li>Daily predictions via email</li>
+                    <li>Top 5 longs/shorts</li>
+                    <li>Performance dashboard</li>
+                    <li>Email support</li>
+                </ul>
+                <a href="mailto:sales@semanticspace.ai?subject=Starter Plan Inquiry" class="cta-button" style="margin-top: 20px; display: inline-block; font-size: 0.9em;">Get Started</a>
+            </div>
+
+            <div class="pricing-card featured">
+                <h3>Professional</h3>
+                <div class="price">$7,500<span style="font-size: 0.4em; color: #666;">/month</span></div>
+                <ul>
+                    <li>All 23 tickers</li>
+                    <li>REST API access</li>
+                    <li>Real-time predictions</li>
+                    <li>Custom position sizing</li>
+                    <li>Slack integration</li>
+                    <li>Priority support</li>
+                </ul>
+                <a href="mailto:sales@semanticspace.ai?subject=Professional Plan Inquiry" class="cta-button" style="margin-top: 20px; display: inline-block; font-size: 0.9em;">Most Popular</a>
+            </div>
+
+            <div class="pricing-card">
+                <h3>Enterprise</h3>
+                <div class="price">$15,000<span style="font-size: 0.4em; color: #666;">/month</span></div>
+                <ul>
+                    <li>Custom ticker universe</li>
+                    <li>Dedicated API instance</li>
+                    <li>Multi-timeframe predictions</li>
+                    <li>Custom risk parameters</li>
+                    <li>White-glove onboarding</li>
+                    <li>24/7 support</li>
+                </ul>
+                <a href="mailto:sales@semanticspace.ai?subject=Enterprise Plan Inquiry" class="cta-button" style="margin-top: 20px; display: inline-block; font-size: 0.9em;">Contact Sales</a>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 60px 0; padding: 40px; background: #f0f4ff; border-radius: 10px;">
+            <h3 style="font-size: 1.8em; margin-bottom: 20px; color: #667eea;">Coming Soon: Fractal Premium</h3>
+            <p style="font-size: 1.1em; max-width: 800px; margin: 0 auto;">
+                Upgrade to our fractal-enhanced network featuring Hurst exponent analysis, multi-scale regime detection, and fractal dimension filtering.
+                <strong>Early estimates show 26% improvement in IC.</strong> Join the waitlist for $10,000/month add-on.
+            </p>
+            <a href="mailto:sales@semanticspace.ai?subject=Fractal Premium Waitlist" class="cta-button" style="margin-top: 30px; display: inline-block;">Join Waitlist</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Semantic Space Trading. All rights reserved.</p>
+        <p style="margin-top: 10px; opacity: 0.8;">Disclaimer: Past performance does not guarantee future results. Trading involves substantial risk.</p>
+    </footer>
+</body>
+</html>
