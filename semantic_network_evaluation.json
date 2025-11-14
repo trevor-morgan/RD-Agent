@@ -1,0 +1,23 @@
+{
+  "evaluation_date": "2025-11-14T18:04:48.094113",
+  "model_checkpoint": "semantic_network_best.pt",
+  "best_epoch": 109,
+  "best_val_ic": 0.010325282748661081,
+  "test_results": {
+    "ic": 0.010432527335134795,
+    "mse": 0.00039005649159662426,
+    "directional_accuracy": 0.5119971134764568,
+    "simulated_sharpe": 0.19906740090511335
+  },
+  "semantic_space": {
+    "pca_variance_explained": [
+      0.17675578594207764,
+      0.1173437312245369
+    ]
+  },
+  "dataset": {
+    "n_tickers": 23,
+    "n_times": 2513,
+    "test_samples": 482
+  }
+}

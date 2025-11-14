@@ -1,0 +1,125 @@
+================================================================================
+SEMANTIC SPACE TRADING - RESUME TO 1000 EPOCHS
+================================================================================
+
+Loading dataset...
+================================================================================
+LOADING SEMANTIC DATASET
+================================================================================
+
+Tickers: 23
+Interval: 1d
+Period: 3650 days
+
+Downloading AAPL...
+  ✓ 2513 bars
+Downloading MSFT...
+  ✓ 2513 bars
+Downloading GOOGL...
+  ✓ 2513 bars
+Downloading AMZN...
+  ✓ 2513 bars
+Downloading META...
+  ✓ 2513 bars
+Downloading NVDA...
+  ✓ 2513 bars
+Downloading TSLA...
+  ✓ 2513 bars
+Downloading JPM...
+  ✓ 2513 bars
+Downloading BAC...
+  ✓ 2513 bars
+Downloading GS...
+  ✓ 2513 bars
+Downloading MS...
+  ✓ 2513 bars
+Downloading WMT...
+  ✓ 2513 bars
+Downloading HD...
+  ✓ 2513 bars
+Downloading MCD...
+  ✓ 2513 bars
+Downloading NKE...
+  ✓ 2513 bars
+Downloading JNJ...
+  ✓ 2513 bars
+Downloading UNH...
+  ✓ 2513 bars
+Downloading PFE...
+  ✓ 2513 bars
+Downloading XOM...
+  ✓ 2513 bars
+Downloading CVX...
+  ✓ 2513 bars
+Downloading SPY...
+  ✓ 2513 bars
+Downloading QQQ...
+  ✓ 2513 bars
+Downloading IWM...
+  ✓ 2513 bars
+
+Successfully loaded 23/23 tickers
+
+Creating unified dataset...
+  Common timestamps: 2513
+  Prices: (2513, 23)
+  Volumes: (2513, 23)
+  Returns: (2513, 23)
+
+Creating semantic features...
+  Correlations: (2513, 253)
+
+✓ Semantic dataset ready
+
+
+================================================================================
+RESUMING SEMANTIC NETWORK TRAINING
+================================================================================
+
+Loading checkpoint: semantic_network_checkpoint_epoch_100.pt
+  Resuming from epoch 100
+
+Device: cpu
+
+Creating datasets...
+  Train samples: 1989
+  Val samples: 482
+
+================================================================================
+CREATING SEMANTIC SPACE NETWORK
+================================================================================
+
+Architecture:
+  Input tickers: 23
+  Correlation features: 253
+  Embedding dimension: 256
+  Attention heads: 8
+  Transformer layers: 4
+  Sequence length: 20
+
+Total parameters: 3,779,863
+Trainable parameters: 3,779,863
+
+✓ Network created
+================================================================================
+CONTINUING TRAINING
+================================================================================
+
+Epoch 101/1000 (8.4s, total 0.1m)
+  Train - Loss: 0.000555, IC: +0.0095
+  Val   - Loss: 0.000388, IC: +0.0001
+  LR: 9.75e-05
+  Best IC: +0.0001 (epoch 101)
+
+Epoch 111/1000 (6.6s, total 1.2m)
+  Train - Loss: 0.000515, IC: -0.0003
+  Val   - Loss: 0.000373, IC: +0.0009
+  LR: 9.70e-05
+  Best IC: +0.0023 (epoch 103)
+
+Epoch 121/1000 (6.5s, total 2.4m)
+  Train - Loss: 0.000495, IC: +0.0037
+  Val   - Loss: 0.000382, IC: +0.0037
+  LR: 9.65e-05
+  Best IC: +0.0078 (epoch 117)
+
