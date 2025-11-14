@@ -1,0 +1,119 @@
+================================================================================
+FRACTAL SEMANTIC SPACE - 1000 EPOCH TRAINING
+================================================================================
+
+Training fractal-enhanced semantic network in parallel
+with standard semantic network for comparison.
+
+================================================================================
+
+Loading dataset...
+================================================================================
+LOADING SEMANTIC DATASET
+================================================================================
+
+Tickers: 23
+Interval: 1d
+Period: 3650 days
+
+Downloading AAPL...
+  ✓ 2513 bars
+Downloading MSFT...
+  ✓ 2513 bars
+Downloading GOOGL...
+  ✓ 2513 bars
+Downloading AMZN...
+  ✓ 2513 bars
+Downloading META...
+  ✓ 2513 bars
+Downloading NVDA...
+  ✓ 2513 bars
+Downloading TSLA...
+  ✓ 2513 bars
+Downloading JPM...
+  ✓ 2513 bars
+Downloading BAC...
+  ✓ 2513 bars
+Downloading GS...
+  ✓ 2513 bars
+Downloading MS...
+  ✓ 2513 bars
+Downloading WMT...
+  ✓ 2513 bars
+Downloading HD...
+  ✓ 2513 bars
+Downloading MCD...
+  ✓ 2513 bars
+Downloading NKE...
+  ✓ 2513 bars
+Downloading JNJ...
+  ✓ 2513 bars
+Downloading UNH...
+  ✓ 2513 bars
+Downloading PFE...
+  ✓ 2513 bars
+Downloading XOM...
+  ✓ 2513 bars
+Downloading CVX...
+  ✓ 2513 bars
+Downloading SPY...
+  ✓ 2513 bars
+Downloading QQQ...
+  ✓ 2513 bars
+Downloading IWM...
+  ✓ 2513 bars
+
+Successfully loaded 23/23 tickers
+
+Creating unified dataset...
+  Common timestamps: 2513
+  Prices: (2513, 23)
+  Volumes: (2513, 23)
+  Returns: (2513, 23)
+
+Creating semantic features...
+  Correlations: (2513, 253)
+
+✓ Semantic dataset ready
+
+
+================================================================================
+FRACTAL SEMANTIC NETWORK TRAINING
+================================================================================
+
+Epochs: 1000
+Batch size: 64
+Learning rate: 0.0001
+Sequence length: 20
+
+Device: cpu
+
+Creating datasets...
+Extracting fractal features for dataset...
+  Processed 5/23 tickers
+  Processed 10/23 tickers
+  Processed 15/23 tickers
+  Processed 20/23 tickers
+✓ Fractal features shape: (2010, 207)
+Extracting fractal features for dataset...
+  Processed 5/23 tickers
+  Processed 10/23 tickers
+  Processed 15/23 tickers
+  Processed 20/23 tickers
+✓ Fractal features shape: (503, 207)
+  Train samples: 1989
+  Val samples: 482
+
+Creating Fractal Semantic Network...
+  Total parameters: 4,333,361
+
+================================================================================
+TRAINING FRACTAL SEMANTIC NETWORK
+================================================================================
+
+Epoch 1/1000 (11.6s, total 0.2m)
+  Train - Loss: 0.005489, IC: +0.0038
+  Val   - Loss: 0.000556, IC: +0.0018
+  LR: 1.00e-04
+  Best IC: +0.0018 (epoch 1)
+
