@@ -123,3 +123,15 @@ Epoch 121/1000 (6.5s, total 2.4m)
   LR: 9.65e-05
   Best IC: +0.0078 (epoch 117)
 
+Epoch 131/1000 (6.8s, total 3.5m)
+  Train - Loss: 0.000466, IC: +0.0236
+  Val   - Loss: 0.000375, IC: +0.0152
+  LR: 9.59e-05
+  Best IC: +0.0152 (epoch 131)
+
+Epoch 141/1000 (6.5s, total 4.6m)
+  Train - Loss: 0.000449, IC: +0.0065
+  Val   - Loss: 0.000377, IC: +0.0049
+  LR: 9.52e-05
+  Best IC: +0.0152 (epoch 131)
+
