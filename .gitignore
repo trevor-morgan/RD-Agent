@@ -188,3 +188,4 @@ checkpoints_extended/checkpoint_epoch_*.pt
 semantic_network_*.pt
 semantic_training_log.txt
 training_progress.png
+fractal_semantic_network_*.pt
