@@ -126,6 +126,18 @@ class LLMSettings(ExtendedBaseSettings):
     chat_azure_deepseek_endpoint: str = ""
     chat_azure_deepseek_key: str = ""
 
+    # Multi-provider subscription proxy (CLIProxyAPI)
+    use_subscription_proxy: bool = False
+    """Enable subscription-based API access via CLIProxyAPI.
+    Supports Claude Max, ChatGPT Plus/Pro, and Gemini subscriptions.
+    Requires CLIProxyAPI running locally: https://github.com/router-for-me/CLIProxyAPI
+
+    IMPORTANT: Use 'openai/' prefix in CHAT_MODEL since CLIProxyAPI exposes
+    OpenAI-compatible API. Example: CHAT_MODEL=openai/claude-sonnet-4-20250514
+    """
+    subscription_proxy_url: str = "http://localhost:8317/v1"
+    """URL for CLIProxyAPI server (default port is 8317)"""
+
     chat_model_map: dict[str, dict[str, str]] = {}
 
 

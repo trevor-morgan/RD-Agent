@@ -1,4 +1,5 @@
 import copyreg
+import os
 from typing import Any, Literal, Optional, Type, TypedDict, Union, cast
 
 import numpy as np
@@ -49,8 +50,34 @@ class LiteLLMAPIBackend(APIBackend):
     """LiteLLM implementation of APIBackend interface"""
 
     _has_logged_settings: bool = False
+    _subscription_proxy_configured: bool = False
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        # Configure subscription proxy (CLIProxyAPI) if enabled
+        # Supports Claude Max, ChatGPT Plus/Pro, and Gemini subscriptions
+        if LITELLM_SETTINGS.use_subscription_proxy and not self.__class__._subscription_proxy_configured:
+            proxy_url = LITELLM_SETTINGS.subscription_proxy_url
+
+            # CLIProxyAPI exposes OpenAI-compatible endpoint for all providers
+            # Set base URLs for each provider so LiteLLM routes through the proxy
+            os.environ["OPENAI_API_BASE"] = proxy_url
+            os.environ["ANTHROPIC_BASE_URL"] = proxy_url
+            os.environ["GEMINI_API_BASE"] = proxy_url
+
+            # Placeholder keys - CLIProxyAPI uses OAuth, not API keys
+            # LiteLLM requires these to be set even though the proxy ignores them
+            if not os.environ.get("OPENAI_API_KEY"):
+                os.environ["OPENAI_API_KEY"] = "subscription-proxy"
+            if not os.environ.get("ANTHROPIC_API_KEY"):
+                os.environ["ANTHROPIC_API_KEY"] = "subscription-proxy"
+            if not os.environ.get("GEMINI_API_KEY"):
+                os.environ["GEMINI_API_KEY"] = "subscription-proxy"
+
+            logger.info(
+                f"{LogColors.GREEN}Subscription proxy enabled{LogColors.END} at {proxy_url}"
+            )
+            self.__class__._subscription_proxy_configured = True
+
         if not self.__class__._has_logged_settings:
             logger.info(f"{LITELLM_SETTINGS}")
             logger.log_object(LITELLM_SETTINGS.model_dump(), tag="LITELLM_SETTINGS")
