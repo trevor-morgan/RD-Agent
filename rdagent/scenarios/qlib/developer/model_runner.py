@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 
 from rdagent.components.runner import CachedRunner
@@ -8,6 +10,31 @@ from rdagent.log import rdagent_logger as logger
 from rdagent.scenarios.qlib.developer.utils import process_factor_data
 from rdagent.scenarios.qlib.experiment.factor_experiment import QlibFactorExperiment
 from rdagent.scenarios.qlib.experiment.model_experiment import QlibModelExperiment
+
+
+def get_config_name(base_config: str, data_region: str | None = None) -> str:
+    """Get the appropriate config name based on data region.
+
+    Args:
+        base_config: Base config name like "conf_baseline_factors_model.yaml"
+        data_region: Data region (cn_data, us_data, alpaca_us, etc.)
+
+    Returns:
+        Config name with US prefix if using US data
+    """
+    if data_region is None:
+        data_region = os.environ.get("QLIB_DATA_REGION", "cn_data")
+
+    # Use US configs for US data regions
+    if data_region in ("us_data", "alpaca_us", "alpaca"):
+        # Map CN configs to US equivalents
+        config_map = {
+            "conf_baseline_factors_model.yaml": "conf_us_baseline_model.yaml",
+            "conf_sota_factors_model.yaml": "conf_us_sota_model.yaml",
+        }
+        return config_map.get(base_config, base_config)
+
+    return base_config
 
 
 class QlibModelRunner(CachedRunner[QlibModelExperiment]):
@@ -79,23 +106,23 @@ class QlibModelRunner(CachedRunner[QlibModelExperiment]):
                     {"dataset_cls": "TSDatasetH", "num_features": num_features, "step_len": 20, "num_timesteps": 20}
                 )
                 result, stdout = exp.experiment_workspace.execute(
-                    qlib_config_name="conf_sota_factors_model.yaml", run_env=env_to_use
+                    qlib_config_name=get_config_name("conf_sota_factors_model.yaml"), run_env=env_to_use
                 )
             else:
                 env_to_use.update({"dataset_cls": "TSDatasetH", "step_len": 20, "num_timesteps": 20})
                 result, stdout = exp.experiment_workspace.execute(
-                    qlib_config_name="conf_baseline_factors_model.yaml", run_env=env_to_use
+                    qlib_config_name=get_config_name("conf_baseline_factors_model.yaml"), run_env=env_to_use
                 )
         elif exp.sub_tasks[0].model_type == "Tabular":
             if exist_sota_factor_exp:
                 env_to_use.update({"dataset_cls": "DatasetH", "num_features": num_features})
                 result, stdout = exp.experiment_workspace.execute(
-                    qlib_config_name="conf_sota_factors_model.yaml", run_env=env_to_use
+                    qlib_config_name=get_config_name("conf_sota_factors_model.yaml"), run_env=env_to_use
                 )
             else:
                 env_to_use.update({"dataset_cls": "DatasetH"})
                 result, stdout = exp.experiment_workspace.execute(
-                    qlib_config_name="conf_baseline_factors_model.yaml", run_env=env_to_use
+                    qlib_config_name=get_config_name("conf_baseline_factors_model.yaml"), run_env=env_to_use
                 )
 
         exp.result = result

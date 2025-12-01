@@ -1,3 +1,5 @@
+import os
+
 from pydantic_settings import SettingsConfigDict
 
 from rdagent.components.workflow.conf import BasePropSetting
@@ -27,6 +29,16 @@ class ModelBasePropSetting(BasePropSetting):
 
     evolving_n: int = 10
     """Number of evolutions"""
+
+    # Seed model settings - allow users to provide their own model as starting point
+    seed_model_path: str | None = None
+    """Path to a model.py file to use as the seed/baseline model for evolution"""
+
+    seed_hypothesis: str | None = None
+    """Description of the seed model for the LLM to understand its architecture"""
+
+    data_region: str = os.environ.get("QLIB_DATA_REGION", "cn_data")
+    """Data region: cn_data, us_data, alpaca_us"""
 
 
 class FactorBasePropSetting(BasePropSetting):

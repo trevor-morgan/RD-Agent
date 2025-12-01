@@ -2,6 +2,7 @@ import copyreg
 import os
 from typing import Any, Literal, Optional, Type, TypedDict, Union, cast
 
+import litellm
 import numpy as np
 from litellm import (
     completion,
@@ -13,6 +14,11 @@ from litellm import (
     token_counter,
 )
 from litellm.exceptions import BadRequestError, Timeout
+
+# Drop unsupported params instead of raising errors
+# This is needed for subscription proxy (CLIProxyAPI) which uses openai/ prefix
+# but the underlying model may support different params
+litellm.drop_params = True
 from pydantic import BaseModel
 
 from rdagent.log import LogColors
@@ -106,9 +112,23 @@ class LiteLLMAPIBackend(APIBackend):
                 f"{LogColors.MAGENTA}Creating embedding{LogColors.END} for: {input_content_list}",
                 tag="debug_litellm_emb",
             )
+
+        # When using subscription proxy, embeddings must go directly to OpenAI
+        # since CLIProxyAPI doesn't support the embeddings endpoint
+        extra_kwargs = {}
+        if LITELLM_SETTINGS.use_subscription_proxy:
+            # Use separate embedding API key/base if configured, else default OpenAI
+            emb_api_key = LITELLM_SETTINGS.embedding_openai_api_key or os.environ.get("EMBEDDING_OPENAI_API_KEY")
+            emb_api_base = LITELLM_SETTINGS.embedding_openai_base_url or "https://api.openai.com/v1"
+            if emb_api_key:
+                extra_kwargs["api_key"] = emb_api_key
+                extra_kwargs["api_base"] = emb_api_base
+                logger.info(f"{LogColors.CYAN}Embeddings bypassing proxy, using OpenAI directly{LogColors.END}", tag="debug_litellm_emb")
+
         response = embedding(
             model=model_name,
             input=input_content_list,
+            **extra_kwargs,
         )
         response_list = [data["embedding"] for data in response.data]
         return response_list
@@ -179,11 +199,18 @@ class LiteLLMAPIBackend(APIBackend):
         complete_kwargs = self.get_complete_kwargs()
         model = complete_kwargs["model"]
 
+        # Add api_base for subscription proxy
+        extra_kwargs = {}
+        if LITELLM_SETTINGS.use_subscription_proxy:
+            extra_kwargs["api_base"] = LITELLM_SETTINGS.subscription_proxy_url
+            extra_kwargs["api_key"] = os.environ.get("OPENAI_API_KEY", "subscription-proxy")
+
         response = completion(
             messages=messages,
             stream=LITELLM_SETTINGS.chat_stream,
             max_retries=0,
             **complete_kwargs,
+            **extra_kwargs,
             **kwargs,
         )
         if LITELLM_SETTINGS.log_llm_chat_content:

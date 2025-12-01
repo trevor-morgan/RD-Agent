@@ -712,6 +712,10 @@ class QlibDockerConf(DockerConf):
     enable_gpu: bool = True
     enable_cache: bool = False
 
+    # Data region configuration: cn_data, us_data, alpaca_us
+    # Can be overridden with QLIB_DOCKER_DATA_REGION environment variable
+    data_region: str = os.environ.get("QLIB_DATA_REGION", "cn_data")
+
 
 class KGDockerConf(DockerConf):
     model_config = SettingsConfigDict(env_prefix="KG_DOCKER_")
@@ -957,16 +961,48 @@ class QTDockerEnv(DockerEnv):
 
     def prepare(self, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
         """
-        Download image & data if it doesn't exist
+        Download image & data if it doesn't exist.
+
+        Supports multiple data regions via QLIB_DATA_REGION environment variable:
+        - cn_data: Chinese market data (default, auto-downloaded)
+        - us_data: US market data (auto-downloaded)
+        - alpaca_us: Alpaca-sourced US data (must be pre-downloaded)
         """
         super().prepare()
         qlib_data_path = next(iter(self.conf.extra_volumes.keys()))
-        if not (Path(qlib_data_path) / "qlib_data" / "cn_data").exists():
-            logger.info("We are downloading!")
+
+        # Get data region from config (which reads from env var)
+        data_region = getattr(self.conf, "data_region", "cn_data")
+        data_path = Path(qlib_data_path) / "qlib_data" / data_region
+
+        if data_path.exists():
+            logger.info(f"Data already exists at {data_path}. Download skipped.")
+            return
+
+        # Handle different data regions
+        if data_region == "cn_data":
+            logger.info("Downloading Chinese market data...")
             cmd = "python -m qlib.run.get_data qlib_data --target_dir ~/.qlib/qlib_data/cn_data --region cn --interval 1d --delete_old False"
             self.check_output(entry=cmd)
+        elif data_region == "us_data":
+            logger.info("Downloading US market data...")
+            cmd = "python -m qlib.run.get_data qlib_data --target_dir ~/.qlib/qlib_data/us_data --region us --interval 1d --delete_old False"
+            self.check_output(entry=cmd)
+        elif data_region in ("alpaca_us", "alpaca"):
+            # Alpaca data must be pre-downloaded by user
+            logger.warning(
+                f"Alpaca data region '{data_region}' selected but data not found at {data_path}. "
+                f"Please download Alpaca data first using your data collector scripts."
+            )
         else:
-            logger.info("Data already exists. Download skipped.")
+            logger.warning(
+                f"Unknown data region '{data_region}'. Expected: cn_data, us_data, alpaca_us. "
+                f"Falling back to cn_data."
+            )
+            if not (Path(qlib_data_path) / "qlib_data" / "cn_data").exists():
+                logger.info("Downloading Chinese market data as fallback...")
+                cmd = "python -m qlib.run.get_data qlib_data --target_dir ~/.qlib/qlib_data/cn_data --region cn --interval 1d --delete_old False"
+                self.check_output(entry=cmd)
 
 
 class KGDockerEnv(DockerEnv):
