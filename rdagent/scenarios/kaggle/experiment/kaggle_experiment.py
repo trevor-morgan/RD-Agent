@@ -1,5 +1,6 @@
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 from rdagent.app.kaggle.conf import KAGGLE_IMPLEMENT_SETTING
 from rdagent.components.coder.factor_coder.factor import (
@@ -35,8 +36,10 @@ KG_SELECT_MAPPING = {
 
 
 class KGModelExperiment(ModelExperiment[ModelTask, KGFBWorkspace, ModelFBWorkspace]):
-    def __init__(self, *args, source_feature_size: int = None, **kwargs) -> None:
+    def __init__(self, *args: Any, source_feature_size: int | None = None, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+        # Kaggle-specific: per-model scores for detailed feedback
+        self.sub_results: dict[str, float] = {}
         self.experiment_workspace = KGFBWorkspace(
             template_folder_path=Path(__file__).resolve().parent / "templates" / KAGGLE_IMPLEMENT_SETTING.competition
         )
@@ -59,8 +62,10 @@ class KGModelExperiment(ModelExperiment[ModelTask, KGFBWorkspace, ModelFBWorkspa
 
 
 class KGFactorExperiment(FeatureExperiment[FactorTask, KGFBWorkspace, FactorFBWorkspace]):
-    def __init__(self, *args, source_feature_size: int = None, **kwargs) -> None:
+    def __init__(self, *args: Any, source_feature_size: int | None = None, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+        # Kaggle-specific: per-model scores for detailed feedback
+        self.sub_results: dict[str, float] = {}
         self.experiment_workspace = KGFBWorkspace(
             template_folder_path=Path(__file__).resolve().parent / "templates" / KAGGLE_IMPLEMENT_SETTING.competition
         )

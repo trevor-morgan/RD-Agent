@@ -22,7 +22,7 @@ from rdagent.utils.agent.tpl import T
 from rdagent.utils.workflow import LoopMeta
 
 
-def generate_hypothesis(factor_result: dict, report_content: str) -> str:
+def generate_hypothesis(factor_result: dict, report_content: str) -> Hypothesis:
     """
     Generate a hypothesis based on factor results and report content.
 
@@ -31,7 +31,7 @@ def generate_hypothesis(factor_result: dict, report_content: str) -> str:
         report_content (str): The content of the report.
 
     Returns:
-        str: The generated hypothesis.
+        Hypothesis: The generated hypothesis.
     """
     system_prompt = T(".prompts:hypothesis_generation.system").r()
     user_prompt = T(".prompts:hypothesis_generation.user").r(
@@ -94,21 +94,21 @@ def extract_hypothesis_and_exp_from_reports(report_file_path: str) -> QlibFactor
 
 
 class FactorReportLoop(FactorRDLoop, metaclass=LoopMeta):
-    def __init__(self, report_folder: str = None):
+    def __init__(self, report_folder: str | None = None) -> None:
         super().__init__(PROP_SETTING=FACTOR_FROM_REPORT_PROP_SETTING)
         if report_folder is None:
-            self.judge_pdf_data_items = json.load(
-                open(FACTOR_FROM_REPORT_PROP_SETTING.report_result_json_file_path)
-            )
+            with Path(FACTOR_FROM_REPORT_PROP_SETTING.report_result_json_file_path).open() as f:
+                self.judge_pdf_data_items = json.load(f)
         else:
-            self.judge_pdf_data_items = [i for i in Path(report_folder).rglob("*.pdf")]
+            self.judge_pdf_data_items = list(Path(report_folder).rglob("*.pdf"))
 
         self.loop_n = min(len(self.judge_pdf_data_items), FACTOR_FROM_REPORT_PROP_SETTING.report_limit)
         self.shift_report = (
-            0  # some reports does not contain viable factor, so we ship some of them to avoid infinite loop
+            0  # some reports does not contain viable factor, so we skip some of them to avoid infinite loop
         )
 
-    async def direct_exp_gen(self, prev_out: dict[str, Any]):
+    async def direct_exp_gen(self, prev_out: dict[str, Any]) -> Any:
+        del prev_out  # unused but required by parent class signature
         while True:
             if self.get_unfinished_loop_cnt(self.loop_idx) < RD_AGENT_SETTINGS.get_max_parallel():
                 report_file_path = self.judge_pdf_data_items[self.loop_idx + self.shift_report]
@@ -116,13 +116,15 @@ class FactorReportLoop(FactorRDLoop, metaclass=LoopMeta):
                 exp = extract_hypothesis_and_exp_from_reports(str(report_file_path))
                 if exp is None:
                     self.shift_report += 1
-                    self.loop_n -= 1
-                    if self.loop_n < 0:  # NOTE: on every step, we self.loop_n -= 1 at first.
-                        raise self.LoopTerminationError("Reach stop criterion and stop loop")
+                    if self.loop_n is not None:
+                        self.loop_n -= 1
+                        if self.loop_n < 0:  # NOTE: on every step, we self.loop_n -= 1 at first.
+                            msg = "Reach stop criterion and stop loop"
+                            raise self.LoopTerminationError(msg)
                     continue
-                exp.based_experiments = [QlibFactorExperiment(sub_tasks=[], hypothesis=exp.hypothesis)] + [
-                    t[0] for t in self.trace.hist if t[1]
-                ]
+                exp.based_experiments = [  # type: ignore[assignment]
+                    QlibFactorExperiment(sub_tasks=[], hypothesis=exp.hypothesis)
+                ] + [t[0] for t in self.trace.hist if t[1]]
                 exp.sub_workspace_list = exp.sub_workspace_list[: FACTOR_FROM_REPORT_PROP_SETTING.max_factors_per_exp]
                 exp.sub_tasks = exp.sub_tasks[: FACTOR_FROM_REPORT_PROP_SETTING.max_factors_per_exp]
                 logger.log_object(exp.hypothesis, tag="hypothesis generation")
@@ -130,12 +132,12 @@ class FactorReportLoop(FactorRDLoop, metaclass=LoopMeta):
                 return exp
             await asyncio.sleep(1)
 
-    def coding(self, prev_out: dict[str, Any]):
+    def coding(self, prev_out: dict[str, Any]) -> Any:
         exp = self.coder.develop(prev_out["direct_exp_gen"])
         logger.log_object(exp.sub_workspace_list, tag="coder result")
         return exp
 
-    def feedback(self, prev_out: dict[str, Any]):
+    def feedback(self, prev_out: dict[str, Any]) -> None:
         e = prev_out.get(self.EXCEPTION_KEY, None)
         if e is not None:
             feedback = HypothesisFeedback(
@@ -153,14 +155,20 @@ class FactorReportLoop(FactorRDLoop, metaclass=LoopMeta):
             self.trace.hist.append((prev_out["running"], feedback))
 
 
-def main(report_folder=None, path=None, all_duration=None, checkout=True):
+def main(
+    report_folder: str | None = None,
+    path: str | None = None,
+    all_duration: str | None = None,
+    checkout: bool = True,
+) -> None:
     """
-    Auto R&D Evolving loop for fintech factors (the factors are extracted from finance reports).
+    Auto R&D Evolving loop for fintech factors (extracted from finance reports).
 
     Args:
-        report_folder (str, optional): The folder contains the report PDF files. Reports will be loaded from this folder.
-        path (str, optional): The path for loading a session. If provided, the session will be loaded.
-        step_n (int, optional): Step number to continue running a session.
+        report_folder: The folder containing report PDF files to load.
+        path: The path for loading an existing session.
+        all_duration: Duration limit for the loop.
+        checkout: Whether to checkout when loading a session.
     """
     if path is None and report_folder is None:
         model_loop = FactorReportLoop()

@@ -163,8 +163,15 @@ class Trace(Generic[ASpecificScen, ASpecificKB]):
         self.current_selection: tuple[int, ...] = (-1,)
 
     def get_sota_hypothesis_and_experiment(self) -> tuple[Hypothesis | None, Experiment | None]:
-        """Access the last experiment result, sub-task, and the corresponding hypothesis."""
-        # TODO: The return value does not align with the signature.
+        """Get the SOTA (state-of-the-art) hypothesis and experiment from trace history.
+
+        Iterates through history in reverse to find the most recent successful experiment
+        (one where feedback.decision is True).
+
+        Returns:
+            A tuple of (hypothesis, experiment) from the SOTA experiment,
+            or (None, None) if no successful experiment exists.
+        """
         for experiment, feedback in self.hist[::-1]:
             if feedback.decision:
                 return experiment.hypothesis, experiment

@@ -6,6 +6,9 @@ import numpy as np
 from rdagent.core.utils import import_class
 from rdagent.oai.backend.base import APIBackend as BaseAPIBackend
 from rdagent.oai.llm_conf import LLM_SETTINGS
+from rdagent.utils import md5_hash  # Re-export for backward compatibility
+
+__all__ = ["APIBackend", "calculate_embedding_distance_between_str_list", "get_api_backend", "md5_hash"]
 
 
 def calculate_embedding_distance_between_str_list(

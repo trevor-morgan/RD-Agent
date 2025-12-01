@@ -7,6 +7,7 @@ import re
 import shutil
 import typing
 import uuid
+import warnings
 import zipfile
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
@@ -33,11 +34,25 @@ This file contains the all the class about organizing the task in RD-Agent.
 
 class AbsTask(ABC):
     def __init__(self, name: str, version: int = 1) -> None:
+        """Initialize task with name and version.
+
+        Args:
+            name: The task name.
+            version: Execution version (1=Qlib, 2=Kaggle). Default is 1.
+
+        .. deprecated::
+            The ``version`` parameter is deprecated and will be removed in a future release.
+            Scenario-specific workspace subclasses should be used instead.
+            See ARCHITECTURE_REFACTOR_PLAN.md Phase 2 for migration details.
         """
-        The version of the task, default is 1
-        Because qlib tasks execution and kaggle tasks execution are different, we need to distinguish them.
-        TODO: We may align them in the future.
-        """
+        if version != 1:
+            warnings.warn(
+                "The 'version' parameter in Task is deprecated. "
+                "Use scenario-specific workspace subclasses instead. "
+                "See ARCHITECTURE_REFACTOR_PLAN.md Phase 2 for migration details.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
         self.version = version
         self.name = name
 
@@ -415,9 +430,6 @@ class Experiment(
         # - only runner will assign this variable
         # - We will always create a new Experiment without copying previous results when we goto the next new loop.
         self.running_info = RunningInfo()
-        self.sub_results: dict[str, float] = (
-            {}
-        )  # TODO: in Kaggle, now sub results are all saved in self.result, remove this in the future.
 
         # For parallel multi-trace support
         self.local_selection: tuple[int, ...] | None = None

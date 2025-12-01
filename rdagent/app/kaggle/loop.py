@@ -1,60 +1,62 @@
+import asyncio
 import subprocess
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import fire
-from rdagent.app.kaggle.conf import KAGGLE_IMPLEMENT_SETTING
-from rdagent.components.workflow.conf import BasePropSetting
+from rdagent.app.kaggle.conf import KAGGLE_IMPLEMENT_SETTING, KaggleBasePropSetting
 from rdagent.components.workflow.rd_loop import RDLoop
-from rdagent.core.developer import Developer
 from rdagent.core.exception import CoderError, FactorEmptyError, ModelEmptyError
-from rdagent.core.proposal import (
-    Experiment2Feedback,
-    Hypothesis2Experiment,
-    HypothesisGen,
-)
-from rdagent.core.scenario import Scenario
 from rdagent.core.utils import import_class
 from rdagent.log import rdagent_logger as logger
 from rdagent.scenarios.kaggle.experiment.scenario import (
     KG_ACTION_FEATURE_ENGINEERING,
     KG_ACTION_FEATURE_PROCESSING,
     KG_ACTION_MODEL_FEATURE_SELECTION,
+    KGScenario,
 )
 from rdagent.scenarios.kaggle.experiment.utils import python_files_to_notebook
 from rdagent.scenarios.kaggle.kaggle_crawler import download_data
 from rdagent.scenarios.kaggle.proposal.proposal import KGTrace
 
+if TYPE_CHECKING:
+    from rdagent.core.developer import Developer
+    from rdagent.core.proposal import (
+        Experiment2Feedback,
+        Hypothesis2Experiment,
+        HypothesisGen,
+    )
+
 
 class KaggleRDLoop(RDLoop):
-    def __init__(self, PROP_SETTING: BasePropSetting):
-        scen: Scenario = import_class(PROP_SETTING.scen)(PROP_SETTING.competition)
+    def __init__(self, prop_setting: KaggleBasePropSetting) -> None:
+        scen: KGScenario = import_class(prop_setting.scen)(prop_setting.competition)
         logger.log_object(scen, tag="scenario")
         knowledge_base = (
-            import_class(PROP_SETTING.knowledge_base)(PROP_SETTING.knowledge_base_path, scen)
-            if PROP_SETTING.knowledge_base != ""
+            import_class(prop_setting.knowledge_base)(prop_setting.knowledge_base_path, scen)
+            if prop_setting.knowledge_base != ""
             else None
         )
         logger.log_object(knowledge_base, tag="knowledge_base")
-        self.hypothesis_gen: HypothesisGen = import_class(PROP_SETTING.hypothesis_gen)(scen)
+        self.hypothesis_gen: HypothesisGen = import_class(prop_setting.hypothesis_gen)(scen)
         logger.log_object(self.hypothesis_gen, tag="hypothesis generator")
-        self.hypothesis2experiment: Hypothesis2Experiment = import_class(PROP_SETTING.hypothesis2experiment)()
+        self.hypothesis2experiment: Hypothesis2Experiment = import_class(prop_setting.hypothesis2experiment)()
         logger.log_object(self.hypothesis2experiment, tag="hypothesis2experiment")
-        self.feature_coder: Developer = import_class(PROP_SETTING.feature_coder)(scen)
+        self.feature_coder: Developer = import_class(prop_setting.feature_coder)(scen)
         logger.log_object(self.feature_coder, tag="feature coder")
-        self.model_feature_selection_coder: Developer = import_class(PROP_SETTING.model_feature_selection_coder)(scen)
+        self.model_feature_selection_coder: Developer = import_class(prop_setting.model_feature_selection_coder)(scen)
         logger.log_object(self.model_feature_selection_coder, tag="model feature selection coder")
-        self.model_coder: Developer = import_class(PROP_SETTING.model_coder)(scen)
+        self.model_coder: Developer = import_class(prop_setting.model_coder)(scen)
         logger.log_object(self.model_coder, tag="model coder")
-        self.feature_runner: Developer = import_class(PROP_SETTING.feature_runner)(scen)
+        self.feature_runner: Developer = import_class(prop_setting.feature_runner)(scen)
         logger.log_object(self.feature_runner, tag="feature runner")
-        self.model_runner: Developer = import_class(PROP_SETTING.model_runner)(scen)
+        self.model_runner: Developer = import_class(prop_setting.model_runner)(scen)
         logger.log_object(self.model_runner, tag="model runner")
-        self.summarizer: Experiment2Feedback = import_class(PROP_SETTING.summarizer)(scen)
+        self.summarizer: Experiment2Feedback = import_class(prop_setting.summarizer)(scen)
         logger.log_object(self.summarizer, tag="summarizer")
         self.trace = KGTrace(scen=scen, knowledge_base=knowledge_base)
         super(RDLoop, self).__init__()
 
-    def coding(self, prev_out: dict[str, Any]):
+    def coding(self, prev_out: dict[str, Any]) -> Any:
         if prev_out["direct_exp_gen"]["propose"].action in [
             KG_ACTION_FEATURE_ENGINEERING,
             KG_ACTION_FEATURE_PROCESSING,
@@ -67,7 +69,7 @@ class KaggleRDLoop(RDLoop):
         logger.log_object(exp.sub_workspace_list, tag="coder result")
         return exp
 
-    def running(self, prev_out: dict[str, Any]):
+    def running(self, prev_out: dict[str, Any]) -> Any:
         if prev_out["direct_exp_gen"]["propose"].action in [
             KG_ACTION_FEATURE_ENGINEERING,
             KG_ACTION_FEATURE_PROCESSING,
@@ -110,13 +112,17 @@ class KaggleRDLoop(RDLoop):
     skip_loop_error = (ModelEmptyError, FactorEmptyError, CoderError)
 
 
-def main(path=None, step_n=None, competition=None):
+def main(path: str | None = None, step_n: int | None = None, competition: str | None = None) -> None:
     """
     Auto R&D Evolving loop for models in a kaggle{} scenario.
+
     You can continue running session by
+
     .. code-block:: bash
-        dotenv run -- python rdagent/app/kaggle/loop.py [--competition titanic] $LOG_PATH/__session__/1/0_propose  --step_n 1   # `step_n` is a optional parameter
-        rdagent kaggle --competition playground-series-s4e8  # You are encouraged to use this one.
+
+        dotenv run -- python rdagent/app/kaggle/loop.py [--competition titanic] \\
+            $LOG_PATH/__session__/1/0_propose --step_n 1  # `step_n` is optional
+        rdagent kaggle --competition playground-series-s4e8  # Recommended
     """
     if competition:
         KAGGLE_IMPLEMENT_SETTING.competition = competition
@@ -127,11 +133,8 @@ def main(path=None, step_n=None, competition=None):
             )
     else:
         logger.error("Please specify competition name.")
-    if path is None:
-        kaggle_loop = KaggleRDLoop(KAGGLE_IMPLEMENT_SETTING)
-    else:
-        kaggle_loop = KaggleRDLoop.load(path)
-    kaggle_loop.run(step_n=step_n)
+    kaggle_loop = KaggleRDLoop(KAGGLE_IMPLEMENT_SETTING) if path is None else KaggleRDLoop.load(path)
+    asyncio.run(kaggle_loop.run(step_n=step_n))
 
 
 if __name__ == "__main__":

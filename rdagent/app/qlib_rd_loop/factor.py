@@ -17,11 +17,12 @@ from rdagent.log import rdagent_logger as logger
 class FactorRDLoop(RDLoop):
     skip_loop_error = (FactorEmptyError,)
 
-    def running(self, prev_out: dict[str, Any]):
+    def running(self, prev_out: dict[str, Any]) -> Any:
         exp = self.runner.develop(prev_out["coding"])
         if exp is None:
-            logger.error("Factor extraction failed.")
-            raise FactorEmptyError("Factor extraction failed.")
+            msg = "Factor extraction failed."
+            logger.error(msg)
+            raise FactorEmptyError(msg)
         logger.log_object(exp, tag="runner result")
         return exp
 
@@ -33,7 +34,7 @@ def main(
     all_duration: str | None = None,
     checkout: Annotated[bool, typer.Option("--checkout/--no-checkout", "-c/-C")] = True,
     checkout_path: str | None = None,
-):
+) -> None:
     """
     Auto R&D Evolving loop for fintech factors.
 
@@ -41,16 +42,13 @@ def main(
 
     .. code-block:: python
 
-        dotenv run -- python rdagent/app/qlib_rd_loop/factor.py $LOG_PATH/__session__/1/0_propose  --step_n 1   # `step_n` is a optional paramter
+        dotenv run -- python rdagent/app/qlib_rd_loop/factor.py \\
+            $LOG_PATH/__session__/1/0_propose --step_n 1  # `step_n` is optional
 
     """
-    if checkout_path is not None:
-        checkout = Path(checkout_path)
+    checkout_value: bool | Path = Path(checkout_path) if checkout_path is not None else checkout
 
-    if path is None:
-        model_loop = FactorRDLoop(FACTOR_PROP_SETTING)
-    else:
-        model_loop = FactorRDLoop.load(path, checkout=checkout)
+    model_loop = FactorRDLoop(FACTOR_PROP_SETTING) if path is None else FactorRDLoop.load(path, checkout=checkout_value)
     asyncio.run(model_loop.run(step_n=step_n, loop_n=loop_n, all_duration=all_duration))
 
 

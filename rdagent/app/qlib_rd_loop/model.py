@@ -28,7 +28,7 @@ def main(
     seed_model: str | None = None,
     seed_hypothesis: str | None = None,
     data_region: str | None = None,
-):
+) -> None:
     """
     Auto R&D Evolving loop for fintech models
 
@@ -69,12 +69,15 @@ def main(
         # Validate seed model path
         seed_path = Path(seed_model)
         if not seed_path.exists():
-            raise FileNotFoundError(f"Seed model not found: {seed_model}")
+            msg = f"Seed model not found: {seed_model}"
+            raise FileNotFoundError(msg)
 
         # Update settings with seed model info
+        seed_model_path = str(seed_path.absolute())
+        seed_hyp = seed_hypothesis or f"User-provided model from {seed_path.name}"
         settings = ModelBasePropSetting(
-            seed_model_path=str(seed_path.absolute()),
-            seed_hypothesis=seed_hypothesis or f"User-provided model from {seed_path.name}",
+            seed_model_path=seed_model_path,
+            seed_hypothesis=seed_hyp,
             data_region=data_region or os.environ.get("QLIB_DATA_REGION", "cn_data"),
         )
         logger.info(f"Using seed model: {seed_model}")
@@ -86,9 +89,9 @@ def main(
 
         # Load seed model if provided
         if seed_model is not None and hasattr(model_loop, "_load_seed_model"):
-            model_loop._load_seed_model(
-                model_path=settings.seed_model_path,
-                hypothesis_text=settings.seed_hypothesis,
+            model_loop._load_seed_model(  # noqa: SLF001
+                model_path=seed_model_path,
+                hypothesis_text=seed_hyp,
             )
     else:
         model_loop = ModelRDLoop.load(path, checkout=checkout)
