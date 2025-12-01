@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Any
 
 from pydantic_settings import SettingsConfigDict
-
 from rdagent.core.conf import ExtendedBaseSettings
 
 

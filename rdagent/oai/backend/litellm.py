@@ -1,6 +1,6 @@
 import copyreg
 import os
-from typing import Any, Literal, Optional, Type, TypedDict, Union, cast
+from typing import Any, Literal, TypedDict, cast
 
 import litellm
 import numpy as np
@@ -9,7 +9,6 @@ from litellm import (
     completion_cost,
     embedding,
     get_model_info,
-    supports_function_calling,
     supports_response_schema,
     token_counter,
 )
@@ -20,7 +19,6 @@ from litellm.exceptions import BadRequestError, Timeout
 # but the underlying model may support different params
 litellm.drop_params = True
 from pydantic import BaseModel
-
 from rdagent.log import LogColors
 from rdagent.log import rdagent_logger as logger
 from rdagent.oai.backend.base import APIBackend
@@ -79,9 +77,7 @@ class LiteLLMAPIBackend(APIBackend):
             if not os.environ.get("GEMINI_API_KEY"):
                 os.environ["GEMINI_API_KEY"] = "subscription-proxy"
 
-            logger.info(
-                f"{LogColors.GREEN}Subscription proxy enabled{LogColors.END} at {proxy_url}"
-            )
+            logger.info(f"{LogColors.GREEN}Subscription proxy enabled{LogColors.END} at {proxy_url}")
             self.__class__._subscription_proxy_configured = True
 
         if not self.__class__._has_logged_settings:
@@ -115,20 +111,23 @@ class LiteLLMAPIBackend(APIBackend):
 
         # When using subscription proxy, embeddings must go directly to OpenAI
         # since CLIProxyAPI doesn't support the embeddings endpoint
-        extra_kwargs = {}
+        api_key: str | None = None
+        api_base: str | None = None
         if LITELLM_SETTINGS.use_subscription_proxy:
             # Use separate embedding API key/base if configured, else default OpenAI
-            emb_api_key = LITELLM_SETTINGS.embedding_openai_api_key or os.environ.get("EMBEDDING_OPENAI_API_KEY")
-            emb_api_base = LITELLM_SETTINGS.embedding_openai_base_url or "https://api.openai.com/v1"
-            if emb_api_key:
-                extra_kwargs["api_key"] = emb_api_key
-                extra_kwargs["api_base"] = emb_api_base
-                logger.info(f"{LogColors.CYAN}Embeddings bypassing proxy, using OpenAI directly{LogColors.END}", tag="debug_litellm_emb")
+            api_key = LITELLM_SETTINGS.embedding_openai_api_key or os.environ.get("EMBEDDING_OPENAI_API_KEY")
+            if api_key:
+                api_base = LITELLM_SETTINGS.embedding_openai_base_url or "https://api.openai.com/v1"
+                logger.info(
+                    f"{LogColors.CYAN}Embeddings bypassing proxy, using OpenAI directly{LogColors.END}",
+                    tag="debug_litellm_emb",
+                )
 
         response = embedding(
             model=model_name,
             input=input_content_list,
-            **extra_kwargs,
+            api_key=api_key,
+            api_base=api_base,
         )
         response_list = [data["embedding"] for data in response.data]
         return response_list
@@ -160,7 +159,7 @@ class LiteLLMAPIBackend(APIBackend):
                         max_tokens = int(mc["max_tokens"])
                     if "reasoning_effort" in mc:
                         if mc["reasoning_effort"] in ["low", "medium", "high"]:
-                            reasoning_effort = cast(Literal["low", "medium", "high"], mc["reasoning_effort"])
+                            reasoning_effort = cast("Literal['low', 'medium', 'high']", mc["reasoning_effort"])
                         else:
                             reasoning_effort = None
                     break
@@ -171,10 +170,10 @@ class LiteLLMAPIBackend(APIBackend):
             reasoning_effort=reasoning_effort,
         )
 
-    def _create_chat_completion_inner_function(  # type: ignore[no-untyped-def] # noqa: C901, PLR0912, PLR0915
+    def _create_chat_completion_inner_function(  # type: ignore[no-untyped-def] # noqa: C901, PLR0912
         self,
         messages: list[dict[str, Any]],
-        response_format: Optional[Union[dict, Type[BaseModel]]] = None,
+        response_format: dict | type[BaseModel] | None = None,
         *args,
         **kwargs,
     ) -> tuple[str, str | None]:
@@ -295,5 +294,5 @@ class LiteLLMAPIBackend(APIBackend):
 
             max_input_tokens = max_input - max_output
             return max_input_tokens
-        except Exception as e:
+        except Exception:
             return super().chat_token_limit

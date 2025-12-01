@@ -1,9 +1,6 @@
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List
-
-from tqdm import tqdm
 
 from rdagent.app.kaggle.conf import KAGGLE_IMPLEMENT_SETTING
 from rdagent.components.knowledge_management.graph import (
@@ -15,6 +12,7 @@ from rdagent.core.utils import multiprocessing_wrapper
 from rdagent.oai.llm_utils import APIBackend
 from rdagent.scenarios.kaggle.experiment.scenario import KGScenario
 from rdagent.utils.agent.tpl import T
+from tqdm import tqdm
 
 
 class KGKnowledgeGraph(UndirectedGraph):
@@ -29,7 +27,7 @@ class KGKnowledgeGraph(UndirectedGraph):
             documents = []
             print(Path(KAGGLE_IMPLEMENT_SETTING.domain_knowledge_path))
             for file_path in (Path(KAGGLE_IMPLEMENT_SETTING.domain_knowledge_path)).rglob("*.case"):
-                with open(file_path, "r") as f:
+                with open(file_path) as f:
                     documents.append(f.read())
             self.load_from_documents(documents=documents, scenario=scenario)
             self.dump()
@@ -57,7 +55,7 @@ class KGKnowledgeGraph(UndirectedGraph):
             user_prompt = "Continue from the last step please. Don't extract the same knowledge again."
         return knowledge_list
 
-    def load_from_documents(self, documents: List[str], scenario: KGScenario | None) -> None:
+    def load_from_documents(self, documents: list[str], scenario: KGScenario | None) -> None:
         knowledge_list_list = multiprocessing_wrapper(
             [
                 (

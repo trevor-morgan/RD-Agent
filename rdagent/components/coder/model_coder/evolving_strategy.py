@@ -1,5 +1,4 @@
 import json
-from typing import Dict
 
 from rdagent.components.coder.CoSTEER.config import CoSTEER_SETTINGS
 from rdagent.components.coder.CoSTEER.evaluators import CoSTEERSingleFeedback
@@ -12,7 +11,6 @@ from rdagent.components.coder.CoSTEER.knowledge_management import (
 )
 from rdagent.components.coder.model_coder.model import ModelFBWorkspace, ModelTask
 from rdagent.core.experiment import FBWorkspace
-from rdagent.oai.llm_conf import LLM_SETTINGS
 from rdagent.oai.llm_utils import APIBackend
 from rdagent.utils.agent.tpl import T
 
@@ -64,7 +62,7 @@ class ModelMultiProcessEvolvingStrategy(MultiProcessEvolvingStrategy):
                 < APIBackend().chat_token_limit
             ):
                 break
-            elif len(queried_former_failed_knowledge_to_render) > 1:
+            if len(queried_former_failed_knowledge_to_render) > 1:
                 queried_former_failed_knowledge_to_render = queried_former_failed_knowledge_to_render[1:]
             elif len(queried_similar_successful_knowledge_to_render) > 1:
                 queried_similar_successful_knowledge_to_render = queried_similar_successful_knowledge_to_render[1:]
@@ -74,7 +72,7 @@ class ModelMultiProcessEvolvingStrategy(MultiProcessEvolvingStrategy):
                 user_prompt=user_prompt,
                 system_prompt=system_prompt,
                 json_mode=True,
-                json_target_type=Dict[str, str],
+                json_target_type=dict[str, str],
             ),
         )["code"]
         return code

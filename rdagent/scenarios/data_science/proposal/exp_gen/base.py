@@ -1,5 +1,4 @@
-from abc import abstractmethod
-from typing import List, Literal
+from typing import Literal
 
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.core.evolving_framework import KnowledgeBase
@@ -108,7 +107,7 @@ class DSTrace(Trace[DataScienceScen, KnowledgeBase]):
         # All node indices
         all_indices = set(range(len(self.hist)))
         # The leaf nodes have no children, so they are not present as parents of any other node
-        leaves = list(sorted(all_indices - parent_indices))
+        leaves = sorted(all_indices - parent_indices)
         return leaves
 
     def get_sibling_exps(self, current_selection: tuple[int, ...] | None = None):
@@ -185,11 +184,10 @@ class DSTrace(Trace[DataScienceScen, KnowledgeBase]):
         if search_type == "all":
             return self.hist
 
-        elif search_type == "ancestors":
+        if search_type == "ancestors":
             return self.get_parent_exps(selection)
 
-        else:
-            raise ValueError(f"Invalid search type: {search_type}")
+        raise ValueError(f"Invalid search type: {search_type}")
 
     def next_incomplete_component(
         self,
@@ -257,12 +255,11 @@ class DSTrace(Trace[DataScienceScen, KnowledgeBase]):
             ]
         if return_type == "all":
             return SOTA_exp_and_feedback_list + failed_exp_and_feedback_list_after_sota
-        elif return_type == "failed":
+        if return_type == "failed":
             return failed_exp_and_feedback_list_after_sota
-        elif return_type == "sota":
+        if return_type == "sota":
             return SOTA_exp_and_feedback_list
-        else:
-            raise ValueError("Invalid return_type. Must be 'sota', 'failed', or 'all'.")
+        raise ValueError("Invalid return_type. Must be 'sota', 'failed', or 'all'.")
 
     def sota_experiment_fb(
         self,

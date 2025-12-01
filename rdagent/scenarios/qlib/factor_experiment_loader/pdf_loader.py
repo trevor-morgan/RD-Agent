@@ -1,15 +1,10 @@
 from __future__ import annotations
 
 import json
-from typing import Mapping
+from collections.abc import Mapping
 
 import numpy as np
 import pandas as pd
-from sklearn.cluster import KMeans
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.preprocessing import normalize
-from tqdm.auto import tqdm
-
 from rdagent.components.document_reader.document_reader import (
     load_and_process_pdfs_by_langchain,
 )
@@ -17,13 +12,16 @@ from rdagent.components.loader.experiment_loader import FactorExperimentLoader
 from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.core.utils import multiprocessing_wrapper
 from rdagent.log import rdagent_logger as logger
-from rdagent.oai.llm_conf import LLM_SETTINGS
 from rdagent.oai.llm_utils import APIBackend
 from rdagent.scenarios.qlib.experiment.factor_experiment import QlibFactorExperiment
 from rdagent.scenarios.qlib.factor_experiment_loader.json_loader import (
     FactorExperimentLoaderFromDict,
 )
 from rdagent.utils.agent.tpl import T
+from sklearn.cluster import KMeans
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.preprocessing import normalize
+from tqdm.auto import tqdm
 
 
 def classify_report_from_dict(
@@ -388,9 +386,8 @@ def __check_factor_duplication_simulate_json_mode(
             ret_dict = json.loads(extract_result_resp)
             if len(ret_dict) == 0:
                 return generated_duplicated_groups
-            else:
-                generated_duplicated_groups.extend(ret_dict)
-                current_factor_to_string = """Continue to extract duplicated groups. If no more duplicated group found please respond empty dict."""
+            generated_duplicated_groups.extend(ret_dict)
+            current_factor_to_string = """Continue to extract duplicated groups. If no more duplicated group found please respond empty dict."""
     return generated_duplicated_groups
 
 

@@ -1,7 +1,6 @@
 import os
 
 from pydantic_settings import SettingsConfigDict
-
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.core.conf import RD_AGENT_SETTINGS, ExtendedBaseSettings
 

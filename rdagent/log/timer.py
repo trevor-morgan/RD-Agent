@@ -18,7 +18,7 @@ class RDAgentTimer:
 
             match = pattern.match(all_duration)
             if not match:
-                return None
+                return
             value = float(match.group(1))
             unit = match.group(2)
             if unit == "s":
@@ -36,7 +36,7 @@ class RDAgentTimer:
         self.target_time = datetime.now() + self.all_duration
         logger.info(f"Timer set to {self.all_duration} seconds and counting down.")
         self.started = True
-        return None
+        return
 
     def restart_by_remain_time(self) -> None:
         if self._remain_time_duration is not None:
@@ -45,7 +45,6 @@ class RDAgentTimer:
             logger.info(f"Timer restarted with remaining time: {self._remain_time_duration}")
         else:
             logger.warning("No remaining time to restart the timer.")
-        return None
 
     def add_duration(self, duration: timedelta) -> None:
         if self.started and self.target_time is not None:
@@ -63,7 +62,6 @@ class RDAgentTimer:
     def update_remain_time(self) -> None:
         if self.started and self.target_time is not None:
             self._remain_time_duration = self.target_time - datetime.now()
-        return None
 
     def remain_time(self) -> timedelta | None:
         if self.started:

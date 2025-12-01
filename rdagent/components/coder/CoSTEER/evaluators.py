@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from rdagent.components.coder.CoSTEER.evolvable_subjects import EvolvingItem
 from rdagent.core.conf import RD_AGENT_SETTINGS
@@ -187,7 +187,7 @@ This implementation is {'SUCCESS' if self.final_decision else 'FAIL'}.
 class CoSTEERMultiFeedback(Feedback):
     """Feedback contains a list, each element is the corresponding feedback for each factor implementation."""
 
-    def __init__(self, feedback_list: List[CoSTEERSingleFeedback]) -> None:
+    def __init__(self, feedback_list: list[CoSTEERSingleFeedback]) -> None:
         self.feedback_list = feedback_list
 
     def __getitem__(self, index: int) -> CoSTEERSingleFeedback:

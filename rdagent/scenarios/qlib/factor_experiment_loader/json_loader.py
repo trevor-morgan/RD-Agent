@@ -3,12 +3,10 @@ from pathlib import Path
 
 from rdagent.components.benchmark.eval_method import TestCase, TestCases
 from rdagent.components.coder.factor_coder.factor import (
-    FactorExperiment,
     FactorFBWorkspace,
     FactorTask,
 )
 from rdagent.components.loader.experiment_loader import FactorExperimentLoader
-from rdagent.core.experiment import Experiment, Loader
 from rdagent.scenarios.qlib.experiment.factor_experiment import QlibFactorExperiment
 
 
@@ -30,7 +28,7 @@ class FactorExperimentLoaderFromDict(FactorExperimentLoader):
 
 class FactorExperimentLoaderFromJsonFile(FactorExperimentLoader):
     def load(self, json_file_path: Path) -> list:
-        with open(json_file_path, "r") as file:
+        with open(json_file_path) as file:
             factor_dict = json.load(file)
         return FactorExperimentLoaderFromDict().load(factor_dict)
 
@@ -45,7 +43,7 @@ class FactorExperimentLoaderFromJsonString(FactorExperimentLoader):
 # class FactorTestCaseLoaderFromJsonFile(Loader[TestCases]):
 class FactorTestCaseLoaderFromJsonFile:
     def load(self, json_file_path: Path) -> TestCases:
-        with open(json_file_path, "r") as file:
+        with open(json_file_path) as file:
             factor_dict = json.load(file)
         test_cases = TestCases()
         for factor_name, factor_data in factor_dict.items():

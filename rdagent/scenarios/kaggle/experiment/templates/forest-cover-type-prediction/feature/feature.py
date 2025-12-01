@@ -11,7 +11,6 @@ class IdentityFeature:
         """
         Fit the feature engineering model to the training data.
         """
-        pass
 
     def transform(self, X: pd.DataFrame):
         """

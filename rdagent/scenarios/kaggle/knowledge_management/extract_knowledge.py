@@ -51,7 +51,7 @@ def process_all_case_files(directory_path: str):
     json_output = []
 
     for file_path in Path(directory_path).rglob("*.case"):
-        with open(file_path, "r", encoding="utf-8") as file:
+        with open(file_path, encoding="utf-8") as file:
             content = file.read()
             knowledge = extract_knowledge_from_high_score_answers(content)
             json_output.append(knowledge)

@@ -4,7 +4,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import sparse
-from tqdm import tqdm
 
 
 def sample_and_copy_subfolder(

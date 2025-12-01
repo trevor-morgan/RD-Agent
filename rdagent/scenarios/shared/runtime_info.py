@@ -1,7 +1,6 @@
 import platform
 import subprocess
 import sys
-from importlib.metadata import distributions
 
 
 def print_runtime_info():
@@ -29,7 +28,7 @@ def get_gpu_info():
         try:
             result = subprocess.run(
                 ["nvidia-smi", "--query-gpu=name,memory.total,memory.used", "--format=csv"],
-                capture_output=True,
+                check=False, capture_output=True,
                 text=True,
             )
             if result.returncode == 0:

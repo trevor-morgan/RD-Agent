@@ -5,7 +5,6 @@ from datetime import timedelta
 from pathlib import Path
 
 import pandas as pd
-
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.coder.CoSTEER.evaluators import (
     CoSTEEREvaluator,
@@ -19,8 +18,6 @@ from rdagent.log import rdagent_logger as logger
 from rdagent.log.timer import RD_Agent_TIMER_wrapper
 from rdagent.scenarios.data_science.dev.runner import DSRunnerCoSTEERSettings
 from rdagent.scenarios.data_science.test_eval import (
-    MLETestEval,
-    NoTestEvalError,
     get_test_eval,
 )
 from rdagent.utils.agent.tpl import T
@@ -144,10 +141,9 @@ class DSRunnerEvaluator(CoSTEEREvaluator):
                         score_ret_code = 1
                     if score_ret_code != 0:
                         score_check_text += f"The dataframe in file 'scores.csv' is:\n{score_df}"
-                else:
-                    if model_set_in_scores != model_set_in_folder.union({"ensemble"}):
-                        score_check_text += f"\n[Error] The scores dataframe does not contain the correct model names as index.\ncorrect model names are: {model_set_in_folder.union({'ensemble'})}\nscore_df is:\n{score_df}"
-                        score_ret_code = 1
+                elif model_set_in_scores != model_set_in_folder.union({"ensemble"}):
+                    score_check_text += f"\n[Error] The scores dataframe does not contain the correct model names as index.\ncorrect model names are: {model_set_in_folder.union({'ensemble'})}\nscore_df is:\n{score_df}"
+                    score_ret_code = 1
 
                 # Check metric name (columns) - case insensitive
                 if [col.lower() for col in score_df.columns.tolist()] != [self.scen.metric_name.lower()]:
@@ -265,7 +261,7 @@ class DSRunnerEvaluator(CoSTEEREvaluator):
                         feedback.code += f"\n[Error] {error_files} must be used in `main.py`."
                     elif use_one_model:
                         logger.info("Remove unused scripts.")
-                        implementation.inject_files(**{file: implementation.DEL_KEY for file in unused_files})
+                        implementation.inject_files(**dict.fromkeys(unused_files, implementation.DEL_KEY))
 
         if score_ret_code != 0:
             feedback.acceptable = feedback.final_decision = False

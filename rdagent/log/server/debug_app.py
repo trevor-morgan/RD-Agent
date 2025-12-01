@@ -1,8 +1,4 @@
-import multiprocessing
-import os
 import random
-import signal
-import subprocess
 import threading
 import time
 from collections import defaultdict
@@ -13,7 +9,6 @@ import randomname
 import typer
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-
 from rdagent.log.ui.conf import UI_SETTING
 
 app = Flask(__name__, static_folder=UI_SETTING.static_path)
@@ -120,7 +115,7 @@ def receive_msgs():
         app.logger.info(data["msg"]["tag"])
         if not data:
             return jsonify({"error": "No JSON data received"}), 400
-    except Exception as e:
+    except Exception:
         return jsonify({"error": "Internal Server Error"}), 500
 
     if isinstance(data, list):

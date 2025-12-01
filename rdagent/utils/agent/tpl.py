@@ -10,7 +10,6 @@ from typing import Any
 
 import yaml
 from jinja2 import Environment, FunctionLoader, StrictUndefined
-
 from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.log import rdagent_logger as logger
 
@@ -77,8 +76,7 @@ def load_content(uri: str, caller_dir: Path | None = None, ftype: str = "yaml") 
             continue  # the file does not exist, so goto the next loop.
         except KeyError:
             continue  # the file exists, but the yaml key is missing.
-    else:
-        raise FileNotFoundError(f"Cannot find {uri} in {file_path_l}")
+    raise FileNotFoundError(f"Cannot find {uri} in {file_path_l}")
 
 
 # class T(SingletonBaseClass): TODO: singleton does not support args now.

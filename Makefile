@@ -1,4 +1,4 @@
-.PHONY: clean deepclean install init-qlib-env dev constraints black isort mypy ruff toml-sort lint pre-commit test-run test build upload docs-autobuild changelog docs-gen docs-mypy docs-coverage docs
+.PHONY: clean deepclean install init-qlib-env dev constraints black isort mypy ruff toml-sort lint pre-commit test-run test build upload docs-autobuild changelog docs-gen docs-mypy docs-coverage docs uv-sync uv-lint uv-lint-fix uv-test uv-test-offline
 #You can modify it according to your terminal
 SHELL := /bin/bash
 
@@ -6,8 +6,9 @@ SHELL := /bin/bash
 # Variables
 ########################################################################################
 
-# Determine whether to invoke pipenv based on CI environment variable and the availability of pipenv.
-PIPRUN := $(shell [ "$$CI" != "true" ] && command -v pipenv > /dev/null 2>&1 && echo "pipenv run")
+# Determine whether to invoke uv based on CI environment variable and the availability of uv.
+# Falls back to pipenv if uv is not available for backwards compatibility.
+PIPRUN := $(shell [ "$$CI" != "true" ] && command -v uv > /dev/null 2>&1 && echo "uv run" || (command -v pipenv > /dev/null 2>&1 && echo "pipenv run"))
 
 # Get the Python version in `major.minor` format, using the environment variable or the virtual environment if exists.
 PYTHON_VERSION := $(shell echo $${PYTHON_VERSION:-$$(python -V 2>&1 | cut -d ' ' -f 2)} | cut -d '.' -f 1,2)
@@ -67,10 +68,36 @@ init-qlib-env:
 	@source $$(conda info --base)/etc/profile.d/conda.sh && conda activate qlibRDAgent && which pip && pip install pyqlib && pip install ruamel-yaml==0.17.21 && pip install torch==2.1.1 && pip install catboost==0.24.3 && conda deactivate
 
 dev:
-	$(PIPRUN) pip install -U pip setuptools wheel
-	$(PIPRUN) pip install -e .[docs,lint,package,test] -c $(CONSTRAINTS_FILE)
-	$(PIPRUN) pip install -U kaggle
+	@if command -v uv > /dev/null 2>&1; then \
+		echo "Using uv for development setup..."; \
+		uv sync --all-extras; \
+		uv pip install -U kaggle; \
+	else \
+		echo "Using pip for development setup..."; \
+		$(PIPRUN) pip install -U pip setuptools wheel; \
+		$(PIPRUN) pip install -e .[docs,lint,package,test] -c $(CONSTRAINTS_FILE); \
+		$(PIPRUN) pip install -U kaggle; \
+	fi
 	if [ "$(CI)" != "true" ] && command -v pre-commit > /dev/null 2>&1; then pre-commit install --hook-type pre-push; fi
+
+# uv-specific targets
+uv-sync:
+	uv sync --all-extras
+
+uv-lint:
+	uv run ruff check rdagent/core
+	uv run ruff format --check --diff rdagent
+	uv run mypy rdagent/core
+
+uv-lint-fix:
+	uv run ruff check --fix rdagent
+	uv run ruff format rdagent
+
+uv-test:
+	uv run pytest test/ -v
+
+uv-test-offline:
+	uv run pytest -m "offline" test/ -v
 
 # Generate constraints for current Python version.
 constraints: deepclean

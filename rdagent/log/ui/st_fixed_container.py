@@ -100,7 +100,7 @@ def st_fixed_container(
         )
     with non_fixed_container:
         st.markdown(
-            f"<div class='not-fixed-container'></div>",
+            "<div class='not-fixed-container'></div>",
             unsafe_allow_html=True,
         )
     counter += 1

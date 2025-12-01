@@ -10,12 +10,11 @@ import randomname
 import typer
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-from werkzeug.utils import secure_filename
-
 from rdagent.log.storage import FileStorage
 from rdagent.log.ui.conf import UI_SETTING
 from rdagent.log.ui.storage import WebStorage
 from rdagent.log.utils import is_valid_session
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__, static_folder=UI_SETTING.static_path)
 CORS(app)
@@ -185,7 +184,7 @@ def receive_msgs():
         # app.logger.info(data["msg"]["tag"])
         if not data:
             return jsonify({"error": "No JSON data received"}), 400
-    except Exception as e:
+    except Exception:
         return jsonify({"error": "Internal Server Error"}), 500
 
     if isinstance(data, list):
@@ -221,10 +220,10 @@ def control_process():
         if action == "pause":
             os.kill(process.pid, signal.SIGSTOP)
             return jsonify({"status": "paused"}), 200
-        elif action == "resume":
+        if action == "resume":
             os.kill(process.pid, signal.SIGCONT)
             return jsonify({"status": "resumed"}), 200
-        elif action == "stop":
+        if action == "stop":
             process.terminate()
             process.wait()
             del rdagent_processes[id]
@@ -232,8 +231,7 @@ def control_process():
                 {"tag": "END", "timestamp": datetime.now(timezone.utc).isoformat(), "content": {}}
             )
             return jsonify({"status": "stopped"}), 200
-        else:
-            return jsonify({"error": "Unknown action"}), 400
+        return jsonify({"error": "Unknown action"}), 400
     except Exception as e:
         return jsonify({"error": f"Failed to {action} process, {e}"}), 500
 

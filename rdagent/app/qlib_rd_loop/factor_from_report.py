@@ -1,10 +1,9 @@
 import asyncio
 import json
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import fire
-
 from rdagent.app.qlib_rd_loop.conf import FACTOR_FROM_REPORT_PROP_SETTING
 from rdagent.app.qlib_rd_loop.factor import FactorRDLoop
 from rdagent.components.document_reader.document_reader import (
@@ -43,7 +42,7 @@ def generate_hypothesis(factor_result: dict, report_content: str) -> str:
         user_prompt=user_prompt,
         system_prompt=system_prompt,
         json_mode=True,
-        json_target_type=Dict[str, str],
+        json_target_type=dict[str, str],
     )
 
     response_json = json.loads(response)
@@ -99,7 +98,7 @@ class FactorReportLoop(FactorRDLoop, metaclass=LoopMeta):
         super().__init__(PROP_SETTING=FACTOR_FROM_REPORT_PROP_SETTING)
         if report_folder is None:
             self.judge_pdf_data_items = json.load(
-                open(FACTOR_FROM_REPORT_PROP_SETTING.report_result_json_file_path, "r")
+                open(FACTOR_FROM_REPORT_PROP_SETTING.report_result_json_file_path)
             )
         else:
             self.judge_pdf_data_items = [i for i in Path(report_folder).rglob("*.pdf")]

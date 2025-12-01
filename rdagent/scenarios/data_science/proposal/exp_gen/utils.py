@@ -1,8 +1,7 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from pydantic import BaseModel, Field
-
 from rdagent.components.coder.data_science.conf import get_ds_env
 from rdagent.components.coder.data_science.ensemble.exp import EnsembleTask
 from rdagent.components.coder.data_science.feature.exp import FeatureTask
@@ -13,7 +12,7 @@ from rdagent.components.coder.data_science.workflow.exp import WorkflowTask
 from rdagent.core.experiment import FBWorkspace
 from rdagent.utils.agent.tpl import T
 
-_COMPONENT_META: Dict[str, Dict[str, Any]] = {
+_COMPONENT_META: dict[str, dict[str, Any]] = {
     "DataLoadSpec": {
         "target_name": "Data loader and specification generation",
         "spec_file": "spec/data_loader.md",
@@ -53,7 +52,7 @@ _COMPONENT_META: Dict[str, Dict[str, Any]] = {
 }
 
 
-def get_component(name: str) -> Dict[str, Any]:
+def get_component(name: str) -> dict[str, Any]:
     meta = _COMPONENT_META.get(name)
     if meta is None:
         raise KeyError(f"Unknown component: {name!r}")
@@ -70,14 +69,14 @@ class CodingSketch(BaseModel):
     current_state: str = Field(
         description="A summary of the current `main.py` script that serves as the baseline for the planned changes. Focusing on parts that are related to the hypothesis. If `main.py` does not yet exist (i.e., it will be created from scratch based on this sketch), use the string 'N/A'."
     )
-    modifications: List[str] = Field(
+    modifications: list[str] = Field(
         description="A list of specific, targeted changes to be applied to the existing code identified in `current_state`. Each string in the list should concisely describe (in 3-4 sentences): "
         "(a) the specific part of the code to be altered (e.g., a function name, a class, or a logical block); "
         "(b) the nature of the modification (e.g., bug fix, feature addition, refactoring of a small section, performance optimization, deletion); and "
         "(c) a brief explanation or high-level sketch of the new logic or change. "
         "If no direct modifications to existing code are planned (e.g., if creating an entirely new `main.py` as detailed in `structure`), this list should be empty."
     )
-    structure: List[str] = Field(
+    structure: list[str] = Field(
         description="An outline of the new high-level architectural components (primarily functions and classes) if a new `main.py` script is being created from scratch, or if the existing `main.py` is undergoing a major refactor that fundamentally alters or replaces its core structure. "
         "Each string in the list should define a planned function or class, detailing its name, primary responsibility, key parameters (if applicable), return values (if applicable), and core functionality in 2-3 sentences. "
         "This field is typically used when `current_state` is 'N/A' or when the scope of change requires a new architectural blueprint rather than just targeted `modifications`. "

@@ -433,8 +433,7 @@ def identify_files_needed(text: str, prefix: Path | None = None) -> list[str]:
 
     if prefix is None:
         return all_files
-    else:
-        return [str(prefix / file) for file in all_files]
+    return [str(prefix / file) for file in all_files]
 
 
 def identify_files_added(text: str, prefix: Path | None = None) -> list[str]:
@@ -443,8 +442,7 @@ def identify_files_added(text: str, prefix: Path | None = None) -> list[str]:
 
     if prefix is None:
         return added_files
-    else:
-        return [str(prefix / file) for file in added_files]
+    return [str(prefix / file) for file in added_files]
 
 
 # --------------------------------------------------------------------------- #

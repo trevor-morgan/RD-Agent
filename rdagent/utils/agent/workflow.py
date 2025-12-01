@@ -1,5 +1,6 @@
 import json
-from typing import Any, Callable, Type, TypeVar, Union, cast
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from rdagent.core.exception import FormatError
 from rdagent.log import rdagent_logger as logger
@@ -8,7 +9,7 @@ T = TypeVar("T")
 
 
 def build_cls_from_json_with_retry(
-    cls: Type[T],
+    cls: type[T],
     system_prompt: str,
     user_prompt: str,
     retry_n: int = 5,

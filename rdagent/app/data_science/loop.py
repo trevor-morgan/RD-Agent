@@ -1,11 +1,9 @@
 import asyncio
 from pathlib import Path
-from typing import Optional
+from typing import Annotated
 
 import fire
 import typer
-from typing_extensions import Annotated
-
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.core.utils import import_class
 from rdagent.log import rdagent_logger as logger
@@ -13,15 +11,15 @@ from rdagent.scenarios.data_science.loop import DataScienceRDLoop
 
 
 def main(
-    path: Optional[str] = None,
+    path: str | None = None,
     checkout: Annotated[bool, typer.Option("--checkout/--no-checkout", "-c/-C")] = True,
-    checkout_path: Optional[str] = None,
-    step_n: Optional[int] = None,
-    loop_n: Optional[int] = None,
-    timeout: Optional[str] = None,
+    checkout_path: str | None = None,
+    step_n: int | None = None,
+    loop_n: int | None = None,
+    timeout: str | None = None,
     competition="bms-molecular-translation",
     replace_timer=True,
-    exp_gen_cls: Optional[str] = None,
+    exp_gen_cls: str | None = None,
 ):
     """
 
@@ -60,7 +58,7 @@ def main(
       dotenv run -- python rdagent/app/data_science/loop.py [--competition titanic] $LOG_PATH/__session__/1/0_propose  --step_n 1   # `step_n` is an optional parameter
       rdagent kaggle --competition playground-series-s4e8  # This command is recommended.
     """
-    if not checkout_path is None:
+    if checkout_path is not None:
         checkout = Path(checkout_path)
 
     if competition is not None:

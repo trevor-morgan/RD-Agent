@@ -1,5 +1,4 @@
 from pydantic_settings import SettingsConfigDict
-
 from rdagent.core.conf import ExtendedBaseSettings
 
 

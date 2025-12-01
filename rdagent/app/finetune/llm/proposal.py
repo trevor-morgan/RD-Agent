@@ -1,7 +1,3 @@
-from rdagent.app.data_science.conf import DS_RD_SETTING
-from rdagent.core.proposal import ExpGen
-from rdagent.core.scenario import Scenario
-from rdagent.log import rdagent_logger as logger
 from rdagent.scenarios.data_science.experiment.experiment import DSExperiment
 from rdagent.scenarios.data_science.proposal.exp_gen.base import DSHypothesis, DSTrace
 from rdagent.scenarios.data_science.proposal.exp_gen.proposal import DSProposalV2ExpGen

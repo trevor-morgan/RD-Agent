@@ -1,10 +1,8 @@
 from pathlib import Path
 
 import streamlit as st
-from streamlit import session_state as state
-
-from rdagent.app.data_science.loop import DataScienceRDLoop
 from rdagent.log.ui.conf import UI_SETTING
+from streamlit import session_state as state
 
 
 def convert_log_folder_str(lf: str) -> str:

@@ -1,7 +1,6 @@
 from typing import Literal
 
 import pandas as pd
-
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.coder.CoSTEER import CoSTEER
 from rdagent.components.coder.CoSTEER.config import CoSTEERSettings
@@ -213,7 +212,7 @@ class DSCoSTEERRunner(CoSTEER):
         score_fp = exp.experiment_workspace.workspace_path / "scores.csv"
         if not score_fp.exists():
             logger.error("Metrics file (scores.csv) is not generated.")
-            raise RunnerError(f"Metrics file (scores.csv) is not generated")
+            raise RunnerError("Metrics file (scores.csv) is not generated")
         exp.result = pd.read_csv(score_fp, index_col=0)
         exp.running_info.running_time = exp.experiment_workspace.running_info.running_time
 

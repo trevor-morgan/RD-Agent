@@ -1,10 +1,10 @@
 import os
 import sys
+from collections.abc import Generator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
-from typing import Generator
 
 from loguru import logger
 
@@ -15,7 +15,6 @@ if LOG_SETTINGS.format_console is not None:
     logger.add(sys.stdout, format=LOG_SETTINGS.format_console)
 
 from psutil import Process
-
 from rdagent.core.utils import SingletonBaseClass, import_class
 
 from .base import Storage

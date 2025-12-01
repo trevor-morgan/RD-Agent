@@ -1,9 +1,8 @@
-import asyncio
 import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.coder.data_science.ensemble import EnsembleCoSTEER
@@ -27,16 +26,12 @@ from rdagent.core.proposal import ExperimentFeedback, ExpGen
 from rdagent.core.scenario import Scenario
 from rdagent.core.utils import import_class
 from rdagent.log import rdagent_logger as logger
-from rdagent.scenarios.data_science.dev.feedback import DSExperiment2Feedback
 from rdagent.scenarios.data_science.dev.runner import DSCoSTEERRunner
 from rdagent.scenarios.data_science.experiment.experiment import DSExperiment
 from rdagent.scenarios.data_science.proposal.exp_gen import DSTrace
 from rdagent.scenarios.data_science.proposal.exp_gen.base import DataScienceScen
 from rdagent.scenarios.data_science.proposal.exp_gen.idea_pool import DSKnowledgeBase
 from rdagent.scenarios.data_science.proposal.exp_gen.proposal import DSProposalV2ExpGen
-from rdagent.scenarios.data_science.proposal.exp_gen.trace_scheduler import (
-    MCTSScheduler,
-)
 from rdagent.utils.workflow.misc import wait_retry
 
 
@@ -349,7 +344,7 @@ class DataScienceRDLoop(RDLoop):
             )  # backup when upper code line is killed when running
             self.timer.add_duration(datetime.now() - start_archive_datetime)
 
-    def _check_exit_conditions_on_step(self, loop_id: Optional[int] = None, step_id: Optional[int] = None):
+    def _check_exit_conditions_on_step(self, loop_id: int | None = None, step_id: int | None = None):
         if step_id not in [self.steps.index("running"), self.steps.index("feedback")]:
             # pass the check for running and feedbacks since they are very likely to be finished soon.
             super()._check_exit_conditions_on_step(loop_id=loop_id, step_id=step_id)

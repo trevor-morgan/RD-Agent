@@ -2,10 +2,8 @@
 Embedding utilities for handling token limits and text truncation.
 """
 
-from typing import Optional
 
 from litellm import decode, encode, get_max_tokens, token_counter
-
 from rdagent.log import rdagent_logger as logger
 from rdagent.oai.llm_conf import LLM_SETTINGS
 
@@ -60,7 +58,7 @@ def get_embedding_max_tokens(model: str) -> int:
     return default_max_tokens
 
 
-def trim_text_for_embedding(text: str, model: str, max_tokens: Optional[int] = None) -> str:
+def trim_text_for_embedding(text: str, model: str, max_tokens: int | None = None) -> str:
     """
     Truncate text for embedding model using encode/decode approach.
 

@@ -2,19 +2,15 @@ import argparse
 import re
 import textwrap
 from collections import defaultdict
-from datetime import datetime, timezone
+from collections.abc import Callable
 from importlib.resources import files as rfiles
 from pathlib import Path
-from typing import Callable, Type
 
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from plotly.subplots import make_subplots
-from streamlit import session_state as state
-from streamlit_theme import st_theme
-
 from rdagent.components.coder.factor_coder.evaluators import FactorSingleFeedback
 from rdagent.components.coder.factor_coder.factor import FactorFBWorkspace, FactorTask
 from rdagent.components.coder.model_coder.evaluators import ModelSingleFeedback
@@ -35,6 +31,8 @@ from rdagent.scenarios.qlib.experiment.model_experiment import (
     QlibModelScenario,
 )
 from rdagent.scenarios.qlib.experiment.quant_experiment import QlibQuantScenario
+from streamlit import session_state as state
+from streamlit_theme import st_theme
 
 st.set_page_config(layout="wide", page_title="RD-Agent", page_icon="🎓", initial_sidebar_state="expanded")
 
@@ -200,7 +198,7 @@ def get_msgs_until(end_func: Callable[[Message], bool] = lambda _: True):
                                 ):
                                     sms_all = sms
                                     sms = sms.loc[QLIB_SELECTED_METRICS]
-                                sms.name = f"Baseline"
+                                sms.name = "Baseline"
                                 state.metric_series.append(sms)
                                 state.all_metric_series.append(sms_all)
 
@@ -444,9 +442,7 @@ def summary_window():
                 display_hypotheses(state.hypotheses, state.h_decisions, show_true_only)
 
             with chart_c:
-                if isinstance(state.scenario, QlibFactorScenario) and state.alpha_baseline_metrics is not None:
-                    df = pd.DataFrame([state.alpha_baseline_metrics] + state.metric_series[1:])
-                elif isinstance(state.scenario, QlibQuantScenario) and state.alpha_baseline_metrics is not None:
+                if (isinstance(state.scenario, QlibFactorScenario) and state.alpha_baseline_metrics is not None) or (isinstance(state.scenario, QlibQuantScenario) and state.alpha_baseline_metrics is not None):
                     df = pd.DataFrame([state.alpha_baseline_metrics] + state.metric_series[1:])
                 else:
                     df = pd.DataFrame(state.metric_series)
@@ -633,7 +629,7 @@ def feedback_window():
                         st.write(fbr[0].content.experiment_workspace.workspace_path)
                         st.write(fbr[0].content.stdout)
                     except Exception as e:
-                        st.error(f"Error displaying workspace path: {str(e)}")
+                        st.error(f"Error displaying workspace path: {e!s}")
                 with st.expander("**Config⚙️**", expanded=True):
                     st.markdown(state.scenario.experiment_setting, unsafe_allow_html=True)
 
@@ -657,7 +653,7 @@ def feedback_window():
                 if fbe := state.msgs[round]["runner result"]:
                     submission_path = fbe[0].content.experiment_workspace.workspace_path / "submission.csv"
                     st.markdown(
-                        f":green[**Exp Workspace**]: {str(fbe[0].content.experiment_workspace.workspace_path.absolute())}"
+                        f":green[**Exp Workspace**]: {fbe[0].content.experiment_workspace.workspace_path.absolute()!s}"
                     )
                     try:
                         data = submission_path.read_bytes()

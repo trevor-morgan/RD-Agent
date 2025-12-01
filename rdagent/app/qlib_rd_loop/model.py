@@ -9,7 +9,6 @@ import os
 from pathlib import Path
 
 import fire
-
 from rdagent.app.qlib_rd_loop.conf import MODEL_PROP_SETTING, ModelBasePropSetting
 from rdagent.components.workflow.rd_loop import RDLoop
 from rdagent.core.exception import ModelEmptyError

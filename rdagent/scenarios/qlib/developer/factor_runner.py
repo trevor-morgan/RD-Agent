@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pandas as pd
 from pandarallel import pandarallel
-
 from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.core.utils import cache_with_pickle
 
@@ -77,7 +76,7 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
         then passing the combined data to Docker for backtest results.
         """
         if exp.based_experiments and exp.based_experiments[-1].result is None:
-            logger.info(f"Baseline experiment execution ...")
+            logger.info("Baseline experiment execution ...")
             exp.based_experiments[-1] = self.develop(exp.based_experiments[-1])
 
         if exp.based_experiments:
@@ -87,10 +86,10 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
                 base_exp for base_exp in exp.based_experiments if isinstance(base_exp, QlibFactorExperiment)
             ]
             if len(sota_factor_experiments_list) > 1:
-                logger.info(f"SOTA factor processing ...")
+                logger.info("SOTA factor processing ...")
                 SOTA_factor = process_factor_data(sota_factor_experiments_list)
 
-            logger.info(f"New factor processing ...")
+            logger.info("New factor processing ...")
             # Process the new factors data
             new_factors = process_factor_data(exp)
 
@@ -114,7 +113,7 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
             new_columns = pd.MultiIndex.from_product([["feature"], combined_factors.columns])
             combined_factors.columns = new_columns
             num_features = RD_AGENT_SETTINGS.initial_fator_library_size + len(combined_factors.columns)
-            logger.info(f"Factor data processing completed.")
+            logger.info("Factor data processing completed.")
 
             # Due to the rdagent and qlib docker image in the numpy version of the difference,
             # the `combined_factors_df.pkl` file could not be loaded correctly in qlib dokcer,
@@ -131,7 +130,7 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
                     sota_model_exp = base_exp
                     exist_sota_model_exp = True
                     break
-            logger.info(f"Experiment execution ...")
+            logger.info("Experiment execution ...")
             if exist_sota_model_exp:
                 exp.experiment_workspace.inject_files(
                     **{"model.py": sota_model_exp.sub_workspace_list[0].file_dict["model.py"]}
@@ -164,14 +163,14 @@ class QlibFactorRunner(CachedRunner[QlibFactorExperiment]):
                 # LGBM + combined factors
                 result, stdout = exp.experiment_workspace.execute(
                     qlib_config_name=(
-                        f"conf_baseline.yaml" if len(exp.based_experiments) == 0 else "conf_combined_factors.yaml"
+                        "conf_baseline.yaml" if len(exp.based_experiments) == 0 else "conf_combined_factors.yaml"
                     )
                 )
         else:
-            logger.info(f"Experiment execution ...")
+            logger.info("Experiment execution ...")
             result, stdout = exp.experiment_workspace.execute(
                 qlib_config_name=(
-                    f"conf_baseline.yaml" if len(exp.based_experiments) == 0 else "conf_combined_factors.yaml"
+                    "conf_baseline.yaml" if len(exp.based_experiments) == 0 else "conf_combined_factors.yaml"
                 )
             )
 

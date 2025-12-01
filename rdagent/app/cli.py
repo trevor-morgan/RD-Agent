@@ -6,7 +6,6 @@ This will
 - autoamtically load dotenv
 """
 
-import sys
 
 from dotenv import load_dotenv
 
@@ -18,7 +17,6 @@ import subprocess
 from importlib.resources import path as rpath
 
 import typer
-
 from rdagent.app.data_science.loop import main as data_science
 from rdagent.app.general_model.general_model import (
     extract_models_and_implement as general_model,
@@ -41,7 +39,7 @@ def ui(port=19899, log_dir="", debug: bool = False, data_science: bool = False):
     if data_science:
         with rpath("rdagent.log.ui", "dsapp.py") as app_path:
             cmds = ["streamlit", "run", app_path, f"--server.port={port}"]
-            subprocess.run(cmds)
+            subprocess.run(cmds, check=False)
         return
     with rpath("rdagent.log.ui", "app.py") as app_path:
         cmds = ["streamlit", "run", app_path, f"--server.port={port}"]
@@ -51,14 +49,14 @@ def ui(port=19899, log_dir="", debug: bool = False, data_science: bool = False):
             cmds.append(f"--log_dir={log_dir}")
         if debug:
             cmds.append("--debug")
-        subprocess.run(cmds)
+        subprocess.run(cmds, check=False)
 
 
 def server_ui(port=19899):
     """
     start web app to show the log traces in real time
     """
-    subprocess.run(["python", "rdagent/log/server/app.py", f"--port={port}"])
+    subprocess.run(["python", "rdagent/log/server/app.py", f"--port={port}"], check=False)
 
 
 def ds_user_interact(port=19900):
@@ -66,7 +64,7 @@ def ds_user_interact(port=19900):
     start web app to show the log traces in real time
     """
     commands = ["streamlit", "run", "rdagent/log/ui/ds_user_interact.py", f"--server.port={port}"]
-    subprocess.run(commands)
+    subprocess.run(commands, check=False)
 
 
 app.command(name="fin_factor")(fin_factor)

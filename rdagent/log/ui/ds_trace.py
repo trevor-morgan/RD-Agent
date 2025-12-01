@@ -4,16 +4,13 @@ import pickle
 import random
 import re
 from collections import defaultdict
-from datetime import time, timedelta
+from datetime import timedelta
 from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 from litellm import get_valid_models
-from streamlit import session_state as state
-
-from rdagent.app.data_science.loop import DataScienceRDLoop
 from rdagent.log.storage import FileStorage
 from rdagent.log.ui.conf import UI_SETTING
 from rdagent.log.ui.utils import (
@@ -42,6 +39,7 @@ from rdagent.scenarios.data_science.proposal.exp_gen.proposal import (
 )
 from rdagent.utils.agent.tpl import T
 from rdagent.utils.repo.diff import generate_diff_from_dict
+from streamlit import session_state as state
 
 if "show_stdout" not in state:
     state.show_stdout = False
@@ -130,12 +128,10 @@ def load_data(log_path: Path):
                 if ei not in data[li][fn]:
                     data[li][fn][ei] = {}
                 data[li][fn][ei][msg.tag] = msg.content
-            else:
-                if msg.tag:
-                    data[li][fn][msg.tag] = msg.content
-                else:
-                    if not isinstance(msg.content, str):
-                        data[li][fn]["no_tag"] = msg.content
+            elif msg.tag:
+                data[li][fn][msg.tag] = msg.content
+            elif not isinstance(msg.content, str):
+                data[li][fn]["no_tag"] = msg.content
 
     # To be compatible with old version log trace, keep this
     llm_log_p = log_path / "debug_llm.pkl"
@@ -186,7 +182,7 @@ def task_win(task):
     with st.expander(f"**:violet[{task.name}]**", expanded=False):
         st.markdown(task.description)
         if hasattr(task, "package_info"):
-            st.markdown(f"**:blue[Package Info:]**")
+            st.markdown("**:blue[Package Info:]**")
             st.code(task.package_info)
         if hasattr(task, "architecture"):  # model task
             st.markdown(
@@ -268,12 +264,11 @@ def llm_log_win(llm_d: list):
     def to_str_recursive(obj):
         if isinstance(obj, dict):
             return {k: to_str_recursive(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
+        if isinstance(obj, list):
             return [to_str_recursive(v) for v in obj]
-        elif isinstance(obj, tuple):
+        if isinstance(obj, tuple):
             return tuple(to_str_recursive(v) for v in obj)
-        else:
-            return str(obj)
+        return str(obj)
 
     for d in llm_d:
         if "debug_tpl" in d["tag"]:
@@ -389,7 +384,7 @@ def llm_log_win(llm_d: list):
 def hypothesis_win(hypo):
     try:
         st.code(str(hypo).replace("\n", "\n\n"), wrap_lines=True)
-    except Exception as e:
+    except Exception:
         st.write(hypo.__dict__)
 
 
@@ -509,7 +504,7 @@ def running_win(data, base_exp, llm_data=None, last_sota_exp=None):
         st.subheader("Result")
         try:
             st.write(data["no_tag"].result)
-        except AttributeError as e:  # Compatible with old versions
+        except AttributeError:  # Compatible with old versions
             st.write(data["no_tag"].__dict__["result"])
         mle_score_text = data.get("mle_score", "no submission to score")
         mle_score = extract_json(mle_score_text)
@@ -533,7 +528,7 @@ def feedback_win(fb_data, llm_data=None):
         llm_log_win(llm_data["no_tag"])
     try:
         st.code(str(fb).replace("\n", "\n\n"), wrap_lines=True)
-    except Exception as e:
+    except Exception:
         st.write(fb.__dict__)
     if fb.exception is not None:
         st.markdown(f"**:red[Exception]**: {fb.exception}")
@@ -548,7 +543,7 @@ def sota_win(sota_exp, trace):
         st.markdown(":orange[trace.**sota_experiment()**]")
 
     if sota_exp:
-        st.markdown(f"**SOTA Exp Hypothesis**")
+        st.markdown("**SOTA Exp Hypothesis**")
         hypothesis_win(sota_exp.hypothesis)
         st.markdown("**Exp Workspace**")
         workspace_win(sota_exp.experiment_workspace)
@@ -774,8 +769,8 @@ def summarize_win():
         sota_loop_id = state.sota_info[1] if state.sota_info else None
         for loop in range(min_id, max_id + 1):
             loop_data = state.data[loop]
-            df.loc[loop, "Parent N"] = parent_nodes.get(loop, None)
-            df.loc[loop, "Root N"] = root_nodes.get(loop, None)
+            df.loc[loop, "Parent N"] = parent_nodes.get(loop)
+            df.loc[loop, "Root N"] = root_nodes.get(loop)
             df.loc[loop, "Component"] = loop_data["direct_exp_gen"]["no_tag"].hypothesis.component
             df.loc[loop, "Hypothesis"] = loop_data["direct_exp_gen"]["no_tag"].hypothesis.hypothesis
             df.loc[loop, "Reason"] = loop_data["direct_exp_gen"]["no_tag"].hypothesis.reason
@@ -818,7 +813,7 @@ def summarize_win():
                 try:
                     try:
                         running_result = loop_data["running"]["no_tag"].result
-                    except AttributeError as e:  # Compatible with old versions
+                    except AttributeError:  # Compatible with old versions
                         running_result = loop_data["running"]["no_tag"].__dict__["result"]
                     df.loc[loop, "Run Score (valid)"] = str(round(running_result.loc["ensemble"].iloc[0], 5))
                     valid_results[loop] = running_result
@@ -872,20 +867,19 @@ def summarize_win():
                         except Exception as e:
                             state.data[loop]["mle_score"] = str(e)
                             df.loc[loop, "Run Score (test)"] = "❌"
-                else:
-                    if isinstance(state.data[loop]["mle_score"], dict):
-                        medal_emoji = (
-                            "🥇"
-                            if state.data[loop]["mle_score"]["gold_medal"]
-                            else (
-                                "🥈"
-                                if state.data[loop]["mle_score"]["silver_medal"]
-                                else "🥉" if state.data[loop]["mle_score"]["bronze_medal"] else ""
-                            )
+                elif isinstance(state.data[loop]["mle_score"], dict):
+                    medal_emoji = (
+                        "🥇"
+                        if state.data[loop]["mle_score"]["gold_medal"]
+                        else (
+                            "🥈"
+                            if state.data[loop]["mle_score"]["silver_medal"]
+                            else "🥉" if state.data[loop]["mle_score"]["bronze_medal"] else ""
                         )
-                        df.loc[loop, "Run Score (test)"] = f"{medal_emoji} {state.data[loop]['mle_score']['score']}"
-                    else:
-                        df.loc[loop, "Run Score (test)"] = "❌"
+                    )
+                    df.loc[loop, "Run Score (test)"] = f"{medal_emoji} {state.data[loop]['mle_score']['score']}"
+                else:
+                    df.loc[loop, "Run Score (test)"] = "❌"
 
             else:
                 df.loc[loop, "Run Score (valid)"] = "N/A"
@@ -1137,7 +1131,7 @@ with st.sidebar:
     else:
         state.log_folder = Path(
             st.radio(
-                f"Select :blue[**one log folder**]",
+                "Select :blue[**one log folder**]",
                 state.log_folders,
                 format_func=lambda x: x[x.rfind("amlt") + 5 :].split("/")[0] if "amlt" in x else x,
             )
@@ -1169,7 +1163,7 @@ with st.sidebar:
     st.toggle("*Show stdout*", key="show_stdout")
     st.toggle("*Show save workspace*", key="show_save_input")
     st.markdown(
-        f"""
+        """
 - [Summary](#summary)
 - [Exp Gen](#exp-gen)
 - [Coding](#coding)

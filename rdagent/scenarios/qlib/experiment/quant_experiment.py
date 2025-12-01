@@ -63,10 +63,9 @@ class QlibQuantScenario(Scenario):
         # TODO: There are some issues here
         if tag is None:
             return quant_background + "\n" + factor_background + "\n" + model_background
-        elif tag == "factor":
+        if tag == "factor":
             return factor_background
-        else:
-            return model_background
+        return model_background
 
     def get_source_data_desc(self) -> str:
         return self._source_data
@@ -82,10 +81,9 @@ class QlibQuantScenario(Scenario):
 
         if tag is None:
             return factor_output_format + "\n" + model_output_format
-        elif tag == "factor":
+        if tag == "factor":
             return factor_output_format
-        else:
-            return model_output_format
+        return model_output_format
 
     def interface(self, tag=None) -> str:
         assert tag in [None, "factor", "model"]
@@ -98,10 +96,9 @@ class QlibQuantScenario(Scenario):
 
         if tag is None:
             return factor_interface + "\n" + model_interface
-        elif tag == "factor":
+        if tag == "factor":
             return factor_interface
-        else:
-            return model_interface
+        return model_interface
 
     def simulator(self, tag=None) -> str:
         assert tag in [None, "factor", "model"]
@@ -110,10 +107,9 @@ class QlibQuantScenario(Scenario):
 
         if tag is None:
             return factor_simulator + "\n" + model_simulator
-        elif tag == "factor":
+        if tag == "factor":
             return factor_simulator
-        else:
-            return model_simulator
+        return model_simulator
 
     @property
     def rich_style_description(self) -> str:
@@ -164,13 +160,13 @@ class QlibQuantScenario(Scenario):
 
         if simple_background:
             return common_description()
-        elif filtered_tag == "hypothesis_and_experiment" or filtered_tag == "feedback":
+        if filtered_tag == "hypothesis_and_experiment" or filtered_tag == "feedback":
             return common_description() + simulator(None)
-        elif filtered_tag == "factor" or filtered_tag == "feature" or filtered_tag == "factors":
+        if filtered_tag == "factor" or filtered_tag == "feature" or filtered_tag == "factors":
             return common_description("factor") + interface("factor") + output("factor") + simulator("factor")
-        elif filtered_tag == "model" or filtered_tag == "model tuning":
+        if filtered_tag == "model" or filtered_tag == "model tuning":
             return common_description("model") + interface("model") + output("model") + simulator("model")
-        elif action == "factor" or action == "model":
+        if action == "factor" or action == "model":
             return common_description(action) + interface(action) + output(action) + simulator(action)
 
     def get_runtime_environment(self, tag: str = None) -> str:

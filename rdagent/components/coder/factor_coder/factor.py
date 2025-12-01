@@ -3,11 +3,9 @@ from __future__ import annotations
 import subprocess
 import uuid
 from pathlib import Path
-from typing import Tuple, Union
 
 import pandas as pd
 from filelock import FileLock
-
 from rdagent.app.kaggle.conf import KAGGLE_IMPLEMENT_SETTING
 from rdagent.components.coder.CoSTEER.task import CoSTEERTask
 from rdagent.components.coder.factor_coder.config import FACTOR_COSTEER_SETTINGS
@@ -49,13 +47,13 @@ class FactorTask(CoSTEERTask):
         return f"""factor_name: {self.factor_name}
 factor_description: {self.factor_description}
 factor_formulation: {self.factor_formulation}
-variables: {str(self.variables)}"""
+variables: {self.variables!s}"""
 
     def get_task_brief_information(self):
         return f"""factor_name: {self.factor_name}
 factor_description: {self.factor_description}
 factor_formulation: {self.factor_formulation}
-variables: {str(self.variables)}"""
+variables: {self.variables!s}"""
 
     def get_task_information_and_implementation_result(self):
         return {
@@ -104,7 +102,7 @@ class FactorFBWorkspace(FBWorkspace):
         )
 
     @cache_with_pickle(hash_func)
-    def execute(self, data_type: str = "Debug") -> Tuple[str, pd.DataFrame]:
+    def execute(self, data_type: str = "Debug") -> tuple[str, pd.DataFrame]:
         """
         execute the implementation and get the factor value by the following steps:
         1. make the directory in workspace path
@@ -127,8 +125,7 @@ class FactorFBWorkspace(FBWorkspace):
         if self.file_dict is None or "factor.py" not in self.file_dict:
             if self.raise_exception:
                 raise CodeFormatError(self.FB_CODE_NOT_SET)
-            else:
-                return self.FB_CODE_NOT_SET, None
+            return self.FB_CODE_NOT_SET, None
         with FileLock(self.workspace_path / "execution.lock"):
             if self.target_task.version == 1:
                 source_data_path = (
@@ -145,7 +142,7 @@ class FactorFBWorkspace(FBWorkspace):
                 source_data_path = Path(KAGGLE_IMPLEMENT_SETTING.local_data_path) / KAGGLE_IMPLEMENT_SETTING.competition
 
             source_data_path.mkdir(exist_ok=True, parents=True)
-            code_path = self.workspace_path / f"factor.py"
+            code_path = self.workspace_path / "factor.py"
 
             self.link_all_files_in_folder_to_workspace(source_data_path, self.workspace_path)
 
@@ -182,14 +179,12 @@ class FactorFBWorkspace(FBWorkspace):
                     )
                 if self.raise_exception:
                     raise CustomRuntimeError(execution_feedback)
-                else:
-                    execution_error = CustomRuntimeError(execution_feedback)
+                execution_error = CustomRuntimeError(execution_feedback)
             except subprocess.TimeoutExpired:
                 execution_feedback += f"Execution timeout error and the timeout is set to {FACTOR_COSTEER_SETTINGS.file_based_execution_timeout} seconds."
                 if self.raise_exception:
                     raise CustomRuntimeError(execution_feedback)
-                else:
-                    execution_error = CustomRuntimeError(execution_feedback)
+                execution_error = CustomRuntimeError(execution_feedback)
 
             workspace_output_file_path = self.workspace_path / "result.h5"
             if workspace_output_file_path.exists() and execution_success:
@@ -204,8 +199,7 @@ class FactorFBWorkspace(FBWorkspace):
                 executed_factor_value_dataframe = None
                 if self.raise_exception:
                     raise NoOutputError(execution_feedback)
-                else:
-                    execution_error = NoOutputError(execution_feedback)
+                execution_error = NoOutputError(execution_feedback)
 
         return execution_feedback, executed_factor_value_dataframe
 
@@ -218,7 +212,7 @@ class FactorFBWorkspace(FBWorkspace):
         return self.__str__()
 
     @staticmethod
-    def from_folder(task: FactorTask, path: Union[str, Path], **kwargs):
+    def from_folder(task: FactorTask, path: str | Path, **kwargs):
         path = Path(path)
         code_dict = {}
         for file_path in path.iterdir():

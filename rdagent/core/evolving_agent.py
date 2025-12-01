@@ -6,11 +6,10 @@ from contextlib import nullcontext
 from typing import Any, Generic, TypeVar
 
 from filelock import FileLock
-from tqdm import tqdm
-
 from rdagent.core.evaluation import EvaluableObj, Evaluator, Feedback
 from rdagent.core.evolving_framework import EvolvableSubjects, EvolvingStrategy, EvoStep
 from rdagent.log import rdagent_logger as logger
+from tqdm import tqdm
 
 ASpecificEvaluator = TypeVar("ASpecificEvaluator", bound=Evaluator)
 ASpecificEvolvableSubjects = TypeVar("ASpecificEvolvableSubjects", bound=EvolvableSubjects)

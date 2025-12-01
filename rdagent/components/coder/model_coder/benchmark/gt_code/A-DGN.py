@@ -1,5 +1,6 @@
 import math
-from typing import Any, Callable, Dict, Optional, Union
+from collections.abc import Callable
+from typing import Any
 
 import torch
 from torch import Tensor
@@ -54,12 +55,12 @@ class AntiSymmetricConv(torch.nn.Module):
     def __init__(
         self,
         in_channels: int,
-        phi: Optional[MessagePassing] = None,
+        phi: MessagePassing | None = None,
         num_iters: int = 1,
         epsilon: float = 0.1,
         gamma: float = 0.1,
-        act: Union[str, Callable, None] = "tanh",
-        act_kwargs: Optional[Dict[str, Any]] = None,
+        act: str | Callable | None = "tanh",
+        act_kwargs: dict[str, Any] | None = None,
         bias: bool = True,
     ):
         super().__init__()

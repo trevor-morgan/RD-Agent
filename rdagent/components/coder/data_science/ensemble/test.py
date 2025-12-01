@@ -25,7 +25,7 @@ EnsembleExperiment = DSExperiment
 
 def load_ensemble_spec():
     spec_path = COMPETITION_PATH / "spec" / "ensemble.md"
-    with open(spec_path, "r") as f:
+    with open(spec_path) as f:
         return f.read()
 
 

@@ -3,7 +3,7 @@ import os
 import shutil
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -37,19 +37,19 @@ class GenericDataHandler(DataHandler):
 
         if suffix == ".csv":
             return pd.read_csv(path, encoding="utf-8")
-        elif suffix == ".pkl":
+        if suffix == ".pkl":
             return pd.read_pickle(path)
-        elif suffix == ".parquet":
+        if suffix == ".parquet":
             return pd.read_parquet(path)
-        elif suffix in [".h5", ".hdf", ".hdf5"]:
+        if suffix in [".h5", ".hdf", ".hdf5"]:
             # Note: for HDF, you need a 'key' in read_hdf. If you expect a single key,
             # you might do: pd.read_hdf(path, key='df') or something similar.
             # Adjust as needed based on your HDF structure.
             return pd.read_hdf(path, key="data")
-        elif suffix == ".jsonl":
+        if suffix == ".jsonl":
             # Read JSON Lines file
             return pd.read_json(path, lines=True)
-        elif suffix == ".json":
+        if suffix == ".json":
             # Not each json file is able to be converted to a DataFrame
             try:
                 return pd.read_json(path, lines=False)
@@ -84,8 +84,7 @@ class GenericDataHandler(DataHandler):
             data = df.to_dict(orient="records")
             with open(path, "wb") as file:
                 # Write each record in the list to the BSON file
-                for record in data:
-                    file.write(bson.BSON.encode(record))
+                file.writelines(bson.BSON.encode(record) for record in data)
         else:
             raise ValueError(f"Unsupported file type: {suffix}")
 
@@ -236,7 +235,7 @@ class UniqueIDDataReducer(DataReducer):
 
 class JsonReducer(DataReducer):
 
-    def extract_filename(self, item: Any) -> Optional[str]:
+    def extract_filename(self, item: Any) -> str | None:
         if isinstance(item, str):
             return item
 
@@ -257,7 +256,7 @@ class JsonReducer(DataReducer):
         1. 找到最大列表
         2. 随机采样并替换
         """
-        candidates: List[Tuple[Union[Dict, str, int, List], Union[str, int], List[Any]]] = []
+        candidates: list[tuple[dict | str | int | list, str | int, list[Any]]] = []
         self._find_all_lists(data, None, None, candidates)
 
         for parent, key, lst in sorted(candidates, key=lambda x: len(x[2]), reverse=True):
@@ -274,9 +273,9 @@ class JsonReducer(DataReducer):
     def _find_all_lists(
         self,
         current: Any,
-        parent: Union[Dict, List, None],
-        key: Union[str, int, None],
-        out: List[Tuple[Union[Dict, List], Union[str, int], List[Any]]],
+        parent: dict | list | None,
+        key: str | int | None,
+        out: list[tuple[dict | list, str | int, list[Any]]],
     ) -> None:
         """
         out => (parent_container, key_or_index, the_list)。
@@ -296,7 +295,7 @@ class JsonReducer(DataReducer):
                 if isinstance(item, (dict, list)):
                     self._find_all_lists(item, current, idx, out)
 
-    def _sample_list(self, lst: List[Any]) -> List[Any]:
+    def _sample_list(self, lst: list[Any]) -> list[Any]:
         target = max(self.min_num, int(len(lst) * self.min_frac))
         if target >= len(lst):
             return lst[:]

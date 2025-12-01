@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 
 import streamlit as st
-
 from rdagent.log.ui.conf import UI_SETTING
 from rdagent.utils.repo.diff import generate_diff_from_dict
 

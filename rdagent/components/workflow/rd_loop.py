@@ -61,8 +61,13 @@ class RDLoop(LoopBase, metaclass=LoopMeta):
             model_path: Path to model.py file containing a Net class
             hypothesis_text: Description of the model architecture for LLM context
         """
-        from rdagent.components.coder.model_coder.model import ModelTask, ModelFBWorkspace
-        from rdagent.scenarios.qlib.experiment.model_experiment import QlibModelExperiment
+        from rdagent.components.coder.model_coder.model import (
+            ModelFBWorkspace,
+            ModelTask,
+        )
+        from rdagent.scenarios.qlib.experiment.model_experiment import (
+            QlibModelExperiment,
+        )
 
         logger.info(f"Loading seed model from: {model_path}")
 
@@ -150,10 +155,10 @@ class RDLoop(LoopBase, metaclass=LoopMeta):
             logger.error(f"Error evaluating seed model: {e}")
             # Add failed attempt to trace
             seed_feedback = HypothesisFeedback(
-                observations=f"Seed model evaluation error: {str(e)}",
+                observations=f"Seed model evaluation error: {e!s}",
                 hypothesis_evaluation="Seed model could not be evaluated.",
                 new_hypothesis="Fix the model implementation or start fresh.",
-                reason=f"Evaluation error: {str(e)}",
+                reason=f"Evaluation error: {e!s}",
                 decision=False,
             )
             self.trace.hist.append((seed_exp, seed_feedback))

@@ -2,16 +2,12 @@
 Please refer to rdagent/log/ui/utils.py:get_summary_df for more detailed documents about metrics
 """
 
-import re
 from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from streamlit import session_state as state
-
 from rdagent.log.ui.utils import (
-    ALL,
     HIGH,
     LITE,
     MEDIUM,
@@ -22,6 +18,7 @@ from rdagent.log.ui.utils import (
     percent_df,
 )
 from rdagent.scenarios.kaggle.kaggle_crawler import get_metric_direction
+from streamlit import session_state as state
 
 
 def curves_win(summary: dict):

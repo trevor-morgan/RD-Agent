@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
 import torch.nn.functional as F
@@ -59,15 +59,15 @@ class GPSConv(torch.nn.Module):
     def __init__(
         self,
         channels: int,
-        conv: Optional[MessagePassing],
+        conv: MessagePassing | None,
         heads: int = 1,
         dropout: float = 0.0,
         act: str = "relu",
-        act_kwargs: Optional[Dict[str, Any]] = None,
-        norm: Optional[str] = "batch_norm",
-        norm_kwargs: Optional[Dict[str, Any]] = None,
+        act_kwargs: dict[str, Any] | None = None,
+        norm: str | None = "batch_norm",
+        norm_kwargs: dict[str, Any] | None = None,
         attn_type: str = "multihead",
-        attn_kwargs: Optional[Dict[str, Any]] = None,
+        attn_kwargs: dict[str, Any] | None = None,
     ):
         super().__init__()
 
@@ -130,7 +130,7 @@ class GPSConv(torch.nn.Module):
         self,
         x: Tensor,
         edge_index: Adj,
-        batch: Optional[torch.Tensor] = None,
+        batch: torch.Tensor | None = None,
         **kwargs,
     ) -> Tensor:
         r"""Runs the forward pass of the module."""

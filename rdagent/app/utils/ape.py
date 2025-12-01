@@ -45,5 +45,5 @@ for qa in llm_qa:
     analysis_result = api.build_messages_and_create_chat_completion(
         system_prompt=system_prompt, user_prompt=user_prompt
     )
-    print(f"█" * 60)
+    print("█" * 60)
     yes = input("Do you want to continue? (y/n)")

@@ -1,6 +1,5 @@
 import json
 import math
-from typing import List, Tuple
 
 from rdagent.components.coder.factor_coder.factor import FactorTask
 from rdagent.components.coder.model_coder.model import ModelExperiment, ModelTask
@@ -194,7 +193,7 @@ class KGHypothesisGen(FactorAndModelHypothesisGen):
             prompts: Prompts = a_specific_prompt_dict
     """
 
-    def __init__(self, scen: Scenario) -> Tuple[dict, bool]:
+    def __init__(self, scen: Scenario) -> tuple[dict, bool]:
         super().__init__(scen)
 
     def update_reward_estimates(self, trace: Trace) -> None:
@@ -247,7 +246,7 @@ class KGHypothesisGen(FactorAndModelHypothesisGen):
 
         return selected_action
 
-    def prepare_context(self, trace: Trace) -> Tuple[dict, bool]:
+    def prepare_context(self, trace: Trace) -> tuple[dict, bool]:
         hypothesis_and_feedback = (
             T("scenarios.kaggle.prompts:hypothesis_and_feedback").r(
                 trace=trace,
@@ -259,7 +258,7 @@ class KGHypothesisGen(FactorAndModelHypothesisGen):
         if self.scen.if_action_choosing_based_on_UCB:
             action = self.execute_next_action(trace)
 
-        hypothesis_specification = f"Hypothesis should avoid being too general and vague, and should be specific and actionable. For example, hypothesis like 'tune a model' is too general, while hypothesis like 'increase the learning rate to 0.1 of the lightgbm model will improve the performance' is specific and actionable."
+        hypothesis_specification = "Hypothesis should avoid being too general and vague, and should be specific and actionable. For example, hypothesis like 'tune a model' is too general, while hypothesis like 'increase the learning rate to 0.1 of the lightgbm model will improve the performance' is specific and actionable."
         if len(trace.hist) > 0:
             sota_features = str(trace.hist[-1][0].based_experiments[-1].experiment_workspace.data_description)
             sota_models = json.dumps(
@@ -305,7 +304,7 @@ class KGHypothesisGen(FactorAndModelHypothesisGen):
 
 
 class KGHypothesis2Experiment(FactorAndModelHypothesis2Experiment):
-    def prepare_context(self, hypothesis: Hypothesis, trace: Trace) -> Tuple[dict, bool]:
+    def prepare_context(self, hypothesis: Hypothesis, trace: Trace) -> tuple[dict, bool]:
         scenario = trace.scen.get_scenario_all_desc(filtered_tag="hypothesis_and_experiment")
         assert isinstance(hypothesis, KGHypothesis)
         experiment_output_format = (
@@ -323,7 +322,7 @@ class KGHypothesis2Experiment(FactorAndModelHypothesis2Experiment):
             else "No previous hypothesis and feedback available since it's the first round."
         )
 
-        experiment_list: List[ModelExperiment] = [t[0] for t in trace.hist]
+        experiment_list: list[ModelExperiment] = [t[0] for t in trace.hist]
 
         model_list = []
         for experiment in experiment_list:
@@ -412,7 +411,7 @@ class KGHypothesis2Experiment(FactorAndModelHypothesis2Experiment):
     def convert_response(self, response: str, hypothesis: Hypothesis, trace: Trace) -> ModelExperiment:
         if self.current_action in [KG_ACTION_FEATURE_ENGINEERING, KG_ACTION_FEATURE_PROCESSING]:
             return self.convert_feature_experiment(response, hypothesis, trace)
-        elif self.current_action in [KG_ACTION_MODEL_FEATURE_SELECTION, KG_ACTION_MODEL_TUNING]:
+        if self.current_action in [KG_ACTION_MODEL_FEATURE_SELECTION, KG_ACTION_MODEL_TUNING]:
             return self.convert_model_experiment(response, hypothesis, trace)
 
 

@@ -13,16 +13,6 @@ from pathlib import Path
 from typing import Any, Literal
 
 import tree_sitter_python
-from rich import print
-from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
-from rich.prompt import Prompt
-from rich.rule import Rule
-from rich.syntax import Syntax
-from rich.table import Table
-from rich.text import Text
-from tree_sitter import Language, Node, Parser
-
 from rdagent.core.evaluation import Evaluator
 from rdagent.core.evolving_agent import EvoAgent
 from rdagent.core.evolving_framework import (
@@ -34,6 +24,15 @@ from rdagent.core.evolving_framework import (
 )
 from rdagent.core.prompts import Prompts
 from rdagent.oai.llm_utils import APIBackend
+from rich import print
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
+from rich.prompt import Prompt
+from rich.rule import Rule
+from rich.syntax import Syntax
+from rich.table import Table
+from rich.text import Text
+from tree_sitter import Language, Node, Parser
 
 py_parser = Parser(Language(tree_sitter_python.language()))
 CI_prompts = Prompts(file_path=Path(__file__).parent / "prompts.yaml")
@@ -147,8 +146,7 @@ class CodeFile:
                 single string, depending on the value of `return_list`.
         """
         start -= 1
-        if start < 0:
-            start = 0
+        start = max(start, 0)
         end = self.lineno if end is None else end
         if end <= start:
             res = []
@@ -225,7 +223,7 @@ class Repo(EvolvableSubjects):
         excludes = [self.project_path / path for path in excludes]
 
         git_ignored_output = subprocess.check_output(
-            ["/usr/bin/git", "status", "--ignored", "-s"],  # noqa: S603
+            ["/usr/bin/git", "status", "--ignored", "-s"],
             cwd=str(self.project_path),
             stderr=subprocess.STDOUT,
             text=True,
@@ -295,7 +293,7 @@ class RuffEvaluator(Evaluator):
         explain_command = f"ruff rule {error_code} --output-format json"
         try:
             out = subprocess.check_output(
-                shlex.split(explain_command),  # noqa: S603
+                shlex.split(explain_command),
                 stderr=subprocess.STDOUT,
                 text=True,
             )
@@ -308,7 +306,7 @@ class RuffEvaluator(Evaluator):
         """Simply run ruff to get the feedbacks."""
         try:
             out = subprocess.check_output(
-                shlex.split(self.command),  # noqa: S603
+                shlex.split(self.command),
                 cwd=evo.project_path,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -365,7 +363,7 @@ class MypyEvaluator(Evaluator):
     def evaluate(self, evo: Repo, **kwargs: dict) -> CIFeedback:
         try:
             out = subprocess.check_output(
-                shlex.split(self.command),  # noqa: S603
+                shlex.split(self.command),
                 cwd=evo.project_path,
                 stderr=subprocess.STDOUT,
                 text=True,

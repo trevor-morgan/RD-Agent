@@ -63,7 +63,7 @@ class LogColors:
 class CallerInfo(TypedDict):
     function: str
     line: int
-    name: Optional[str]
+    name: str | None
 
 
 def get_caller_info(level: int = 2) -> CallerInfo:
@@ -87,19 +87,19 @@ def is_valid_session(log_path: Path) -> bool:
 def extract_loopid_func_name(tag: str) -> tuple[str, str] | tuple[None, None]:
     """extract loop id and function name from the tag in Message"""
     match = re.search(r"Loop_(\d+)\.([^.]+)", tag)
-    return cast(tuple[str, str], match.groups()) if match else (None, None)
+    return cast("tuple[str, str]", match.groups()) if match else (None, None)
 
 
 def extract_evoid(tag: str) -> str | None:
     """extract evo id from the tag in Message"""
     match = re.search(r"\.evo_loop_(\d+)\.", tag)
-    return cast(str, match.group(1)) if match else None
+    return cast("str", match.group(1)) if match else None
 
 
 def extract_json(log_content: str) -> dict | None:
     match = re.search(r"\{.*\}", log_content, re.DOTALL)
     if match:
-        return cast(dict, json.loads(match.group(0)))
+        return cast("dict", json.loads(match.group(0)))
     return None
 
 

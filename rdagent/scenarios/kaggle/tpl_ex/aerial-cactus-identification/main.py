@@ -33,5 +33,4 @@ pred_binary = ensemble_workflow([test_pred], [val_pred], validation_labels)
 # Save
 with open("submission.csv", "w") as csv_file:
     csv_file.write("id,has_cactus\n")
-    for tid, prediction in zip(test_ids, pred_binary):
-        csv_file.write(f"{tid},{prediction}\n")
+    csv_file.writelines(f"{tid},{prediction}\n" for tid, prediction in zip(test_ids, pred_binary))

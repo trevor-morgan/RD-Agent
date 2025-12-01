@@ -18,7 +18,7 @@ class LatestCKPSelector(CheckpointSelector):
     def __init__(
         self,
     ):
-        logger.info(f"Using latest selector by default")
+        logger.info("Using latest selector by default")
 
     def get_selection(self, trace: Trace) -> tuple[int, ...]:
 
@@ -79,22 +79,21 @@ class LimitTimeCKPSelector(CheckpointSelector):
             )
             logger.info(f"current sub-trace count: {trace.sub_trace_count}")
             return (-1,)
-        else:
-            # Check if we've reached the maximum number of traces
-            if trace.sub_trace_count >= self.MAX_TRACE_NUM:
-                logger.info(
-                    f"Reached maximum trace count ({self.MAX_TRACE_NUM}), continuing with the current sub-trace"
-                )
-                logger.info(f"current sub-trace count: {trace.sub_trace_count}")
-                return (-1,)
-
-            # Time limit exceeded, start a new sub-trace
-            self.sub_trace_start_times[trace.sub_trace_count] = current_time
+        # Check if we've reached the maximum number of traces
+        if trace.sub_trace_count >= self.MAX_TRACE_NUM:
             logger.info(
-                f"Elapsed time {elapsed_time} exceeds time limit {self.time_limit_pre_trace}, jump to a new sub-trace"
+                f"Reached maximum trace count ({self.MAX_TRACE_NUM}), continuing with the current sub-trace"
             )
             logger.info(f"current sub-trace count: {trace.sub_trace_count}")
-            return trace.NEW_ROOT  # Empty tuple signals starting a new sub-trace
+            return (-1,)
+
+        # Time limit exceeded, start a new sub-trace
+        self.sub_trace_start_times[trace.sub_trace_count] = current_time
+        logger.info(
+            f"Elapsed time {elapsed_time} exceeds time limit {self.time_limit_pre_trace}, jump to a new sub-trace"
+        )
+        logger.info(f"current sub-trace count: {trace.sub_trace_count}")
+        return trace.NEW_ROOT  # Empty tuple signals starting a new sub-trace
 
 
 class SOTAJumpCKPSelector(CheckpointSelector):
@@ -141,16 +140,14 @@ class SOTAJumpCKPSelector(CheckpointSelector):
                 )
                 logger.info(f"current sub-trace count: {trace.sub_trace_count}")
                 return trace.NEW_ROOT
-            else:
-                logger.info(
-                    f"SOTA count {sota_count} is above threshold {self.SOTA_COUNT_THRESHOLD}, continue the current latest trial"
-                )
-                logger.info(f"current sub-trace count: {trace.sub_trace_count}")
-                return (-1,)
-
-        else:
-            logger.info(f"Not enough history to make a decision, continue the current latest trial")
+            logger.info(
+                f"SOTA count {sota_count} is above threshold {self.SOTA_COUNT_THRESHOLD}, continue the current latest trial"
+            )
+            logger.info(f"current sub-trace count: {trace.sub_trace_count}")
             return (-1,)
+
+        logger.info("Not enough history to make a decision, continue the current latest trial")
+        return (-1,)
 
 
 class BackJumpCKPSelector(CheckpointSelector):
@@ -202,43 +199,39 @@ class BackJumpCKPSelector(CheckpointSelector):
                         f"SOTA count {sota_count} is below threshold {self.SOTA_COUNT_THRESHOLD}, jump a new sub-trace"
                     )
                     return trace.NEW_ROOT  # reboot a new sub-trace
-                else:
-                    logger.info(
-                        f"SOTA count {sota_count} is below threshold {self.SOTA_COUNT_THRESHOLD}, jump back to the last second SOTA in hist (may not in current sub-trace)"
-                    )
-                    sota_exp_list = trace.experiment_and_feedback_list_after_init(return_type="sota", search_type="all")
-                    if len(sota_exp_list) > 1:
-                        last_second_sota_idx = trace.hist.index(sota_exp_list[-2])
-                        logger.info(
-                            f"jump back to the last second SOTA in hist (may not in current sub-trace), index: {last_second_sota_idx}"
-                        )
-                        logger.info(f"current sub-trace count: {trace.sub_trace_count}")
-                        return (last_second_sota_idx,)
-                    else:
-                        # Check max trace limit again before creating a new trace
-                        if trace.sub_trace_count >= self.MAX_TRACE_NUM:
-                            logger.info(
-                                f"Reached maximum trace count ({self.MAX_TRACE_NUM}), continuing with the current sub-trace"
-                            )
-                            logger.info(f"current sub-trace count: {trace.sub_trace_count}")
-                            return (-1,)
-
-                        logger.info(
-                            f"SOTA count {sota_count} is below threshold {self.SOTA_COUNT_THRESHOLD}, jump a new sub-trace"
-                        )
-                        logger.info(f"current sub-trace count: {trace.sub_trace_count}")
-                        return trace.NEW_ROOT  # reboot a new sub-trace
-
-            else:
                 logger.info(
-                    f"SOTA count {sota_count} is above threshold {self.SOTA_COUNT_THRESHOLD}, continue the current latest trial"
+                    f"SOTA count {sota_count} is below threshold {self.SOTA_COUNT_THRESHOLD}, jump back to the last second SOTA in hist (may not in current sub-trace)"
+                )
+                sota_exp_list = trace.experiment_and_feedback_list_after_init(return_type="sota", search_type="all")
+                if len(sota_exp_list) > 1:
+                    last_second_sota_idx = trace.hist.index(sota_exp_list[-2])
+                    logger.info(
+                        f"jump back to the last second SOTA in hist (may not in current sub-trace), index: {last_second_sota_idx}"
+                    )
+                    logger.info(f"current sub-trace count: {trace.sub_trace_count}")
+                    return (last_second_sota_idx,)
+                # Check max trace limit again before creating a new trace
+                if trace.sub_trace_count >= self.MAX_TRACE_NUM:
+                    logger.info(
+                        f"Reached maximum trace count ({self.MAX_TRACE_NUM}), continuing with the current sub-trace"
+                    )
+                    logger.info(f"current sub-trace count: {trace.sub_trace_count}")
+                    return (-1,)
+
+                logger.info(
+                    f"SOTA count {sota_count} is below threshold {self.SOTA_COUNT_THRESHOLD}, jump a new sub-trace"
                 )
                 logger.info(f"current sub-trace count: {trace.sub_trace_count}")
-                return (-1,)
-        else:
-            logger.info(f"Not enough history to make a decision, continue the current latest trial")
+                return trace.NEW_ROOT  # reboot a new sub-trace
+
+            logger.info(
+                f"SOTA count {sota_count} is above threshold {self.SOTA_COUNT_THRESHOLD}, continue the current latest trial"
+            )
             logger.info(f"current sub-trace count: {trace.sub_trace_count}")
             return (-1,)
+        logger.info("Not enough history to make a decision, continue the current latest trial")
+        logger.info(f"current sub-trace count: {trace.sub_trace_count}")
+        return (-1,)
 
 
 # TODO: implement these selectors and more

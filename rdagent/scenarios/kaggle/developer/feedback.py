@@ -1,8 +1,6 @@
 import json
-from typing import Dict
 
 import pandas as pd
-
 from rdagent.components.knowledge_management.graph import UndirectedNode
 from rdagent.core.experiment import Experiment
 from rdagent.core.proposal import Experiment2Feedback, HypothesisFeedback, Trace
@@ -127,13 +125,13 @@ class KGExperiment2Feedback(Experiment2Feedback):
             "last_hypothesis_and_feedback": last_hypothesis_and_feedback,
         }
 
-        usr_prompt = T(f"scenarios.kaggle.prompts:kg_feedback_generation_user").r(**render_dict)
+        usr_prompt = T("scenarios.kaggle.prompts:kg_feedback_generation_user").r(**render_dict)
 
         response = APIBackend().build_messages_and_create_chat_completion(
             user_prompt=usr_prompt,
             system_prompt=sys_prompt,
             json_mode=True,
-            json_target_type=Dict[str, str | bool | int],
+            json_target_type=dict[str, str | bool | int],
         )
 
         response_json = json.loads(response)
@@ -164,7 +162,7 @@ class KGExperiment2Feedback(Experiment2Feedback):
             raise NotImplementedError("Vector RAG is not implemented yet since there are plenty bugs!")
             self.scen.vector_base.add_experience_to_vector_base(experiment_feedback)
             self.scen.vector_base.dump()
-        elif self.scen.if_using_graph_rag:
+        if self.scen.if_using_graph_rag:
             competition_node = UndirectedNode(content=self.scen.get_competition_full_desc(), label="competition")
             hypothesis_node = UndirectedNode(content=hypothesis.hypothesis, label=hypothesis.action)
             exp_code_nodes = []

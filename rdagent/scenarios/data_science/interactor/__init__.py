@@ -108,13 +108,12 @@ class FBDSInteractor(DSInteractor):
         Path(DS_RD_SETTING.user_interaction_mid_folder / f"{session_id}.pkl").unlink(missing_ok=True)
         if not (DS_RD_SETTING.user_interaction_mid_folder / f"{session_id}_RET.json").exists():
             return exp
-        else:
-            user_feedback = json.load(open(DS_RD_SETTING.user_interaction_mid_folder / f"{session_id}_RET.json"))
-            if user_feedback["action"] == "confirm":
-                return exp
-            elif user_feedback["action"] == "rewrite":
-                exp.hypothesis.hypothesis = user_feedback["target_hypothesis"]
-                exp.pending_tasks_list[0][0].description = user_feedback["task_description"]
-                exp.set_user_instructions(user_feedback["user_instruction"])
-                Path(DS_RD_SETTING.user_interaction_mid_folder / f"{session_id}_RET.json").unlink(missing_ok=True)
-                return exp
+        user_feedback = json.load(open(DS_RD_SETTING.user_interaction_mid_folder / f"{session_id}_RET.json"))
+        if user_feedback["action"] == "confirm":
+            return exp
+        if user_feedback["action"] == "rewrite":
+            exp.hypothesis.hypothesis = user_feedback["target_hypothesis"]
+            exp.pending_tasks_list[0][0].description = user_feedback["task_description"]
+            exp.set_user_instructions(user_feedback["user_instruction"])
+            Path(DS_RD_SETTING.user_interaction_mid_folder / f"{session_id}_RET.json").unlink(missing_ok=True)
+            return exp

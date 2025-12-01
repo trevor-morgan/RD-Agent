@@ -1,9 +1,7 @@
 import json
 from pathlib import Path
-from typing import List, Union
 
 import pandas as pd
-
 from rdagent.components.knowledge_management.vector_base import Document, PDVectorBase
 from rdagent.log import rdagent_logger as logger
 from rdagent.oai.llm_utils import APIBackend
@@ -84,11 +82,11 @@ class KGKnowledgeDocument(Document):
         Load Kaggle post data from a dictionary
         """
         super().from_dict(data)
-        self.competition_name = data.get("competition_name", None)
-        self.task_category = data.get("task_category", None)
-        self.field = data.get("field", None)
-        self.ranking = data.get("ranking", None)
-        self.score = data.get("score", None)
+        self.competition_name = data.get("competition_name")
+        self.task_category = data.get("task_category")
+        self.field = data.get("field")
+        self.ranking = data.get("ranking")
+        self.score = data.get("score")
         self.entities = data.get("entities", [])
         self.relations = data.get("relations", [])
         return self
@@ -108,7 +106,7 @@ class KaggleExperienceBase(PDVectorBase):
     Class for handling Kaggle competition experience posts and organizing them for reference
     """
 
-    def __init__(self, vector_df_path: Union[str, Path] = None, kaggle_experience_path: Union[str, Path] = None):
+    def __init__(self, vector_df_path: str | Path = None, kaggle_experience_path: str | Path = None):
         """
         Initialize the KaggleExperienceBase class
 
@@ -125,7 +123,7 @@ class KaggleExperienceBase(PDVectorBase):
         if kaggle_experience_path:
             self.load_kaggle_experience(kaggle_experience_path)
 
-    def add(self, document: Union[KGDocument, List[KGDocument]]):
+    def add(self, document: KGDocument | list[KGDocument]):
         document.split_into_trunk()
         docs = [
             {
@@ -159,7 +157,7 @@ class KaggleExperienceBase(PDVectorBase):
             )
         self.vector_df = pd.concat([self.vector_df, pd.DataFrame(docs)], ignore_index=True)
 
-    def load_kaggle_experience(self, kaggle_experience_path: Union[str, Path]):
+    def load_kaggle_experience(self, kaggle_experience_path: str | Path):
         """
         Load Kaggle experience posts from a JSON or text file
 
@@ -169,7 +167,7 @@ class KaggleExperienceBase(PDVectorBase):
             Path to the Kaggle experience post data.
         """
         try:
-            with open(kaggle_experience_path, "r", encoding="utf-8") as file:
+            with open(kaggle_experience_path, encoding="utf-8") as file:
                 self.kaggle_experience_data = json.load(file)
             logger.info(f"Kaggle experience data loaded from {kaggle_experience_path}")
         except FileNotFoundError:
@@ -279,7 +277,7 @@ class KaggleExperienceBase(PDVectorBase):
 
         return response
 
-    def save(self, vector_df_path: Union[str, Path]):
+    def save(self, vector_df_path: str | Path):
         """
         Save the vector DataFrame to a file
 

@@ -1,9 +1,9 @@
+from collections.abc import Generator
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 import requests
-
 from rdagent.log.base import Message, Storage
 from rdagent.log.utils import extract_evoid, extract_loopid_func_name, gen_datetime
 
@@ -47,7 +47,7 @@ class WebStorage(Storage):
             headers = {"Content-Type": "application/json"}
             resp = requests.post(f"{self.url}/receive", json=data, headers=headers, timeout=1)
             return f"{resp.status_code} {resp.text}"
-        except (requests.ConnectionError, requests.Timeout) as e:
+        except (requests.ConnectionError, requests.Timeout):
             pass
 
     def truncate(self, time: datetime) -> None:
@@ -276,7 +276,6 @@ class WebStorage(Storage):
 
         elif "Quantitative Backtesting Chart" in tag:
             import plotly
-
             from rdagent.log.ui.qlib_report_figure import report_figure
 
             data = {

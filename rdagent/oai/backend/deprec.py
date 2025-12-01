@@ -1,31 +1,21 @@
 # type: ignore
 from __future__ import annotations
 
-import inspect
 import json
 import os
-import random
 import re
-import sqlite3
 import ssl
-import time
 import urllib.request
-import uuid
-from copy import deepcopy
 from pathlib import Path
-from typing import Any, Optional, Type, Union, cast
+from typing import Any, cast
 
-import numpy as np
 import openai
 import tiktoken
 from openai.types.chat import ChatCompletion
 from pydantic import BaseModel
-
-from rdagent.core.utils import LLM_CACHE_SEED_GEN, SingletonBaseClass, import_class
 from rdagent.log import LogColors
 from rdagent.log import rdagent_logger as logger
 from rdagent.oai.llm_conf import LLM_SETTINGS
-from rdagent.utils import md5_hash
 
 DEFAULT_QLIB_DOT_PATH = Path("./")
 
@@ -254,7 +244,7 @@ class DeprecBackend(APIBackend):
         try:
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
-            logger.warning(f"Failed to get encoder. Trying to patch the model name")
+            logger.warning("Failed to get encoder. Trying to patch the model name")
             for patch_func in [_azure_patch]:
                 try:
                     encoding = tiktoken.encoding_for_model(patch_func(model))
@@ -294,7 +284,7 @@ class DeprecBackend(APIBackend):
     def _create_chat_completion_inner_function(  # type: ignore[no-untyped-def] # noqa: C901, PLR0912, PLR0915
         self,
         messages: list[dict[str, Any]],
-        response_format: Optional[Union[dict, Type[BaseModel]]] = None,
+        response_format: dict | type[BaseModel] | None = None,
         add_json_in_prompt: bool = False,
         *args,
         **kwargs,
@@ -393,7 +383,7 @@ class DeprecBackend(APIBackend):
                     if len(chunk.choices) > 0 and chunk.choices[0].finish_reason is not None:
                         finish_reason = chunk.choices[0].finish_reason
             else:
-                response = cast(ChatCompletion, response)
+                response = cast("ChatCompletion", response)
                 resp = response.choices[0].message.content
                 finish_reason = response.choices[0].finish_reason
                 if LLM_SETTINGS.log_llm_chat_content:

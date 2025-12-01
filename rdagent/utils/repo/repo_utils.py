@@ -1,8 +1,6 @@
 import ast
-import inspect
 import os
 from pathlib import Path
-from typing import Dict, List, Union
 
 
 class RepoAnalyzer:
@@ -63,7 +61,7 @@ class RepoAnalyzer:
         return "\n".join(tree)
 
     def _summarize_file(self, file_path: Path, verbose_level: int, doc_str_level: int, sign_level: int) -> str:
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             content = f.read()
 
         tree = ast.parse(content)
@@ -127,7 +125,7 @@ class RepoAnalyzer:
             summary += f"{indent}  Purpose: {doc.split('.')[0]}.\n"
         return summary
 
-    def highlight(self, file_names: Union[str, List[str]]) -> Dict[str, str]:
+    def highlight(self, file_names: str | list[str]) -> dict[str, str]:
         """
         Extract content from specified file(s) within the repo.
 
@@ -141,7 +139,7 @@ class RepoAnalyzer:
         for file_name in file_names:
             file_path = self.repo_path / file_name
             if file_path.exists() and file_path.is_file():
-                with open(file_path, "r") as f:
+                with open(file_path) as f:
                     highlighted_content[file_name] = f.read()
             else:
                 highlighted_content[file_name] = f"File not found: {file_name}"

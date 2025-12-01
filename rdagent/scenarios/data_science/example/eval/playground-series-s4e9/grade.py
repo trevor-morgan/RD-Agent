@@ -3,7 +3,7 @@ import json
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_absolute_error, mean_squared_error, roc_auc_score
+from sklearn.metrics import mean_squared_error
 
 
 class InvalidSubmissionError(Exception):
@@ -11,7 +11,6 @@ class InvalidSubmissionError(Exception):
     A custom exception for when the agent submission cannot be graded.
     """
 
-    pass
 
 
 def prepare_for_metric(submission: pd.DataFrame, answers: pd.DataFrame) -> dict:

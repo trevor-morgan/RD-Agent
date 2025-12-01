@@ -1,12 +1,10 @@
 # tess successfully running.
 # (GPT) if it aligns with the spec & rationality of the spec.
-import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
-
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.agent.context7 import Agent as DocAgent
 from rdagent.components.coder.CoSTEER import CoSTEERMultiFeedback
@@ -137,7 +135,7 @@ class PipelineCoSTEEREvaluator(CoSTEEREvaluator):
             and target_task_information in queried_knowledge.success_task_to_knowledge_dict
         ):
             return queried_knowledge.success_task_to_knowledge_dict[target_task_information].feedback
-        elif queried_knowledge is not None and target_task_information in queried_knowledge.failed_task_info_set:
+        if queried_knowledge is not None and target_task_information in queried_knowledge.failed_task_info_set:
             return PipelineSingleFeedback(
                 execution="This task has failed too many times, skip implementation.",
                 return_checking="This task has failed too many times, skip implementation.",
@@ -157,11 +155,11 @@ class PipelineCoSTEEREvaluator(CoSTEEREvaluator):
         if DS_RD_SETTING.sample_data_by_LLM:
             # Because coder runs on full data, we need to run debug mode in advance to save time
             result = implementation.run(
-                env=env, entry=f"strace -e trace=file -f -o trace.log python -m coverage run main.py --debug"
+                env=env, entry="strace -e trace=file -f -o trace.log python -m coverage run main.py --debug"
             )
         else:
             result = implementation.run(
-                env=env, entry=f"strace -e trace=file -f -o trace.log python -m coverage run main.py"
+                env=env, entry="strace -e trace=file -f -o trace.log python -m coverage run main.py"
             )
         result_stdout = result.get_truncated_stdout()
 

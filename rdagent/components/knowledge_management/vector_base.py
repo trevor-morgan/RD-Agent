@@ -1,13 +1,10 @@
 import uuid
 from pathlib import Path
-from typing import List, Tuple, Union
 
 import pandas as pd
-from scipy.spatial.distance import cosine
-
 from rdagent.core.knowledge_base import KnowledgeBase
-from rdagent.log import rdagent_logger as logger
 from rdagent.oai.llm_utils import APIBackend
+from scipy.spatial.distance import cosine
 
 
 class KnowledgeMetaData:
@@ -59,7 +56,7 @@ class KnowledgeMetaData:
 Document = KnowledgeMetaData
 
 
-def contents_to_documents(contents: List[str], label: str = None) -> List[Document]:
+def contents_to_documents(contents: list[str], label: str = None) -> list[Document]:
     # openai create embedding API input's max length is 16
     size = 16
     embedding = []
@@ -74,7 +71,7 @@ class VectorBase(KnowledgeBase):
     This class is used for handling vector storage and query
     """
 
-    def add(self, document: Union[Document, List[Document]]):
+    def add(self, document: Document | list[Document]):
         """
         add new node to vector_df
         Parameters
@@ -85,9 +82,8 @@ class VectorBase(KnowledgeBase):
         -------
 
         """
-        pass
 
-    def search(self, content: str, topk_k: int | None = None, similarity_threshold: float = 0) -> List[Document]:
+    def search(self, content: str, topk_k: int | None = None, similarity_threshold: float = 0) -> list[Document]:
         """
         search vector_df by node
         Parameters
@@ -100,7 +96,6 @@ class VectorBase(KnowledgeBase):
         -------
 
         """
-        pass
 
 
 class PDVectorBase(VectorBase):
@@ -108,14 +103,14 @@ class PDVectorBase(VectorBase):
     Implement of VectorBase using Pandas
     """
 
-    def __init__(self, path: Union[str, Path] = None):
+    def __init__(self, path: str | Path = None):
         self.vector_df = pd.DataFrame(columns=["id", "label", "content", "embedding"])
         super().__init__(path)
 
     def shape(self):
         return self.vector_df.shape
 
-    def add(self, document: Union[Document, List[Document]]):
+    def add(self, document: Document | list[Document]):
         """
         add new node to vector_df
         Parameters
@@ -161,7 +156,7 @@ class PDVectorBase(VectorBase):
         topk_k: int | None = None,
         similarity_threshold: float = 0,
         constraint_labels: list[str] | None = None,
-    ) -> Tuple[List[Document], List]:
+    ) -> tuple[list[Document], list]:
         """
         Search vector by node's embedding.
 

@@ -1,5 +1,4 @@
 import fire
-
 from rdagent.scenarios.data_science.debug.data import create_debug_data
 
 if __name__ == "__main__":

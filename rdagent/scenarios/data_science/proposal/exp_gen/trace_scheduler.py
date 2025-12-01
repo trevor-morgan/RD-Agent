@@ -44,7 +44,6 @@ class TraceScheduler(ABC):
         """
         Reset the scheduler to the initial state.
         """
-        pass
 
 
 class BaseScheduler(TraceScheduler):

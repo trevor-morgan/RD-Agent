@@ -11,7 +11,6 @@ import contextlib
 import json
 import os
 import pickle
-import re
 import select
 import shutil
 import subprocess
@@ -19,24 +18,18 @@ import time
 import uuid
 import zipfile
 from abc import abstractmethod
+from collections.abc import Generator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Generator, Generic, Mapping, Optional, TypeVar, cast
+from typing import Any, Generic, TypeVar, cast
 
 import docker  # type: ignore[import-untyped]
 import docker.models  # type: ignore[import-untyped]
 import docker.models.containers  # type: ignore[import-untyped]
 import docker.types  # type: ignore[import-untyped]
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 from pydantic_settings import SettingsConfigDict
-from rich import print
-from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich.rule import Rule
-from rich.table import Table
-from tqdm import tqdm
-
 from rdagent.core.conf import ExtendedBaseSettings
 from rdagent.core.experiment import RD_AGENT_SETTINGS
 from rdagent.log import rdagent_logger as logger
@@ -45,6 +38,12 @@ from rdagent.utils import filter_redundant_text
 from rdagent.utils.agent.tpl import T
 from rdagent.utils.fmt import shrink_text
 from rdagent.utils.workflow import wait_retry
+from rich import print
+from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.rule import Rule
+from rich.table import Table
+from tqdm import tqdm
 
 
 def cleanup_container(container: docker.models.containers.Container | None, context: str = "") -> None:  # type: ignore[no-any-unimported]
@@ -316,8 +315,8 @@ class Env(Generic[ASpecificEnvConf]):
         else:
             timeout_cmd = f"timeout --kill-after=10 {self.conf.running_timeout_period} {entry}"
         entry_add_timeout = (
-            f"/bin/sh -c '"  # start of the sh command
-            + f"{timeout_cmd}; entry_exit_code=$?; "
+            "/bin/sh -c '"  # start of the sh command
+             f"{timeout_cmd}; entry_exit_code=$?; "
             + (
                 f"{_get_chmod_cmd(self.conf.mount_path)}; "
                 # We don't have to change the permission of the cache and input folder to remove it
@@ -354,7 +353,7 @@ class Env(Generic[ASpecificEnvConf]):
         Will cache the output and the folder diff for next round of running.
         Use the python codes and the parameters(entry, running_extra_volume) as key to hash the input.
         """
-        target_folder = Path(RD_AGENT_SETTINGS.pickle_cache_folder_path_str) / f"utils.env.run"
+        target_folder = Path(RD_AGENT_SETTINGS.pickle_cache_folder_path_str) / "utils.env.run"
         target_folder.mkdir(parents=True, exist_ok=True)
 
         # we must add the information of data (beyond code) into the key.
@@ -388,7 +387,7 @@ class Env(Generic[ASpecificEnvConf]):
             with open(target_folder / f"{key}.pkl", "wb") as f:
                 pickle.dump(ret, f)
             self.zip_a_folder_into_a_file(local_path, str(target_folder / f"{key}.zip"))
-        return cast(EnvResult, ret)
+        return cast("EnvResult", ret)
 
     @abstractmethod
     def _run(
@@ -418,7 +417,6 @@ class Env(Generic[ASpecificEnvConf]):
         tuple[str, int]
             A tuple containing the standard output and the exit code.
         """
-        pass
 
     def dump_python_code_run_and_get_results(
         self,
@@ -427,7 +425,7 @@ class Env(Generic[ASpecificEnvConf]):
         local_path: str,
         env: dict | None = None,
         running_extra_volume: Mapping = MappingProxyType({}),
-        code_dump_file_py_name: Optional[str] = None,
+        code_dump_file_py_name: str | None = None,
     ) -> tuple[str, list]:
         """
         Dump the code into the local path and run the code.
@@ -615,7 +613,7 @@ class CondaConf(LocalConf):
     def change_bin_path(self, **data: Any) -> "CondaConf":
         conda_path_result = subprocess.run(
             f"conda run -n {self.conda_env_name} --no-capture-output env | grep '^PATH='",
-            capture_output=True,
+            check=False, capture_output=True,
             text=True,
             shell=True,
         )
@@ -630,7 +628,7 @@ class MLECondaConf(CondaConf):
 ## Docker Environment -----
 class DockerConf(EnvConf):
     build_from_dockerfile: bool = False
-    dockerfile_folder_path: Optional[Path] = (
+    dockerfile_folder_path: Path | None = (
         None  # the path to the dockerfile optional path provided when build_from_dockerfile is False
     )
     image: str  # the image you want to build
@@ -671,7 +669,7 @@ class QlibCondaEnv(LocalEnv[QlibCondaConf]):
     def prepare(self) -> None:
         """Prepare the conda environment if not already created."""
         try:
-            envs = subprocess.run("conda env list", capture_output=True, text=True, shell=True)
+            envs = subprocess.run("conda env list", check=False, capture_output=True, text=True, shell=True)
             if self.conf.conda_env_name not in envs.stdout:
                 print(f"[yellow]Conda env '{self.conf.conda_env_name}' not found, creating...[/yellow]")
                 subprocess.check_call(
@@ -816,7 +814,7 @@ class DockerEnv(Env[DockerConf]):
                 status_task = sp.add_task("[bright_magenta]layer status", progress="")
                 for line in image_pull:
                     if "error" in line:
-                        sp.update(status_task, description=f"[red]error", progress=line["error"])
+                        sp.update(status_task, description="[red]error", progress=line["error"])
                         raise docker.errors.APIError(line["error"])
 
                     layer_id = line["id"]
@@ -903,7 +901,7 @@ class DockerEnv(Env[DockerConf]):
         for lp, rp in running_extra_volume.items():
             volumes[lp] = rp if isinstance(rp, dict) else {"bind": rp, "mode": self.conf.extra_volume_mode}
 
-        volumes = normalize_volumes(cast(dict[str, str | dict[str, str]], volumes), self.conf.mount_path)
+        volumes = normalize_volumes(cast("dict[str, str | dict[str, str]]", volumes), self.conf.mount_path)
 
         log_output = ""
         container: docker.models.containers.Container | None = None  # type: ignore[no-any-unimported]

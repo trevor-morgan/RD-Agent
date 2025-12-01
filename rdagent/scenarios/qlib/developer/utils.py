@@ -1,7 +1,5 @@
-from typing import List
 
 import pandas as pd
-
 from rdagent.components.coder.CoSTEER.evaluators import CoSTEERMultiFeedback
 from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.core.exception import FactorEmptyError
@@ -10,7 +8,7 @@ from rdagent.log import rdagent_logger as logger
 from rdagent.scenarios.qlib.experiment.factor_experiment import QlibFactorExperiment
 
 
-def process_factor_data(exp_or_list: List[QlibFactorExperiment] | QlibFactorExperiment) -> pd.DataFrame:
+def process_factor_data(exp_or_list: list[QlibFactorExperiment] | QlibFactorExperiment) -> pd.DataFrame:
     """
     Process and combine factor data from experiment implementations.
 
@@ -61,7 +59,6 @@ def process_factor_data(exp_or_list: List[QlibFactorExperiment] | QlibFactorExpe
     # Combine all successful factor data
     if factor_dfs:
         return pd.concat(factor_dfs, axis=1)
-    else:
-        raise FactorEmptyError(
-            f"No valid factor data found to merge (in process_factor_data) because of {error_message}."
-        )
+    raise FactorEmptyError(
+        f"No valid factor data found to merge (in process_factor_data) because of {error_message}."
+    )

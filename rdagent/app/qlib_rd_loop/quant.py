@@ -6,7 +6,6 @@ import asyncio
 from typing import Any
 
 import fire
-
 from rdagent.app.qlib_rd_loop.conf import QUANT_PROP_SETTING
 from rdagent.components.workflow.conf import BasePropSetting
 from rdagent.components.workflow.rd_loop import RDLoop
@@ -90,7 +89,7 @@ class QuantRDLoop(RDLoop):
         if prev_out["direct_exp_gen"]["propose"].action == "factor":
             exp = self.factor_runner.develop(prev_out["coding"])
             if exp is None:
-                logger.error(f"Factor extraction failed.")
+                logger.error("Factor extraction failed.")
                 raise FactorEmptyError("Factor extraction failed.")
         elif prev_out["direct_exp_gen"]["propose"].action == "model":
             exp = self.model_runner.develop(prev_out["coding"])

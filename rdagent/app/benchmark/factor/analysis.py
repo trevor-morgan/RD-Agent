@@ -6,8 +6,6 @@ import fire
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
-
 from rdagent.components.benchmark.conf import BenchmarkSettings
 from rdagent.components.benchmark.eval_method import FactorImplementEval
 
@@ -20,7 +18,7 @@ class BenchmarkAnalyzer:
 
     def load_index_map(self):
         index_map = {}
-        with open(self.settings.bench_data_path, "r") as file:
+        with open(self.settings.bench_data_path) as file:
             factor_dict = json.load(file)
         for factor_name, data in factor_dict.items():
             index_map[factor_name] = (factor_name, data["Category"], data["Difficulty"])

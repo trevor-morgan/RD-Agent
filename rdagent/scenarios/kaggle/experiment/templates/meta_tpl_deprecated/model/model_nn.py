@@ -1,7 +1,7 @@
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 

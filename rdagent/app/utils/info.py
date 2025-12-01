@@ -1,12 +1,9 @@
 import importlib.metadata
 import platform
 import sys
-from pathlib import Path
 
 import docker
 import requests
-from setuptools_scm import get_version
-
 from rdagent.log import rdagent_logger as logger
 
 
@@ -20,14 +17,12 @@ def sys_info():
     ]
     for method in method_list:
         logger.info(f"{method[0]}{getattr(platform, method[1])()}")
-    return None
 
 
 def python_info():
     """collect Python related info"""
     python_version = sys.version.replace("\n", " ")
     logger.info(f"Python version: {python_version}")
-    return None
 
 
 def docker_info():
@@ -45,14 +40,14 @@ def docker_info():
         logger.info(f"Container Label: {last_container.labels}")
         logger.info(f"Startup Commands: {' '.join(client.containers.get(last_container.id).attrs['Config']['Cmd'])}")
     else:
-        logger.info(f"No run containers.")
+        logger.info("No run containers.")
 
 
 def rdagent_info():
     """collect rdagent related info"""
     current_version = importlib.metadata.version("rdagent")
     logger.info(f"RD-Agent version: {current_version}")
-    api_url = f"https://api.github.com/repos/microsoft/RD-Agent/contents/requirements.txt?ref=main"
+    api_url = "https://api.github.com/repos/microsoft/RD-Agent/contents/requirements.txt?ref=main"
     response = requests.get(api_url)
     if response.status_code == 200:
         files = response.json()
@@ -74,7 +69,6 @@ def rdagent_info():
         version = importlib.metadata.version(package)
         package_version_list.append(f"{package}=={version}")
     logger.info(f"Package version: {package_version_list}")
-    return None
 
 
 def collect_info():
@@ -83,4 +77,3 @@ def collect_info():
     python_info()
     docker_info()
     rdagent_info()
-    return None

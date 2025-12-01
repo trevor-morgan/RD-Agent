@@ -1,14 +1,11 @@
-import time
 from collections import defaultdict
+from collections.abc import Callable
 from copy import deepcopy
 from datetime import datetime, timezone
-from typing import Callable, Type
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from streamlit.delta_generator import DeltaGenerator
-
 from rdagent.components.coder.factor_coder.evaluators import FactorSingleFeedback
 from rdagent.components.coder.factor_coder.factor import FactorFBWorkspace, FactorTask
 from rdagent.components.coder.model_coder.evaluators import ModelSingleFeedback
@@ -20,6 +17,7 @@ from rdagent.scenarios.qlib.experiment.model_experiment import (
     QlibModelExperiment,
     QlibModelScenario,
 )
+from streamlit.delta_generator import DeltaGenerator
 
 st.set_page_config(layout="wide")
 
@@ -65,7 +63,7 @@ class ProgressTabsWindow(StWindow):
     def __init__(
         self,
         container: "DeltaGenerator",
-        inner_class: Type[StWindow] = StWindow,
+        inner_class: type[StWindow] = StWindow,
         mapper: Callable[[Message], str] = lambda x: x.pid_trace,
     ):
         self.inner_class = inner_class
@@ -103,7 +101,7 @@ class ObjectsTabsWindow(StWindow):
     def __init__(
         self,
         container: "DeltaGenerator",
-        inner_class: Type[StWindow] = StWindow,
+        inner_class: type[StWindow] = StWindow,
         mapper: Callable[[object], str] = lambda x: str(x),
         tab_names: list[str] | None = None,
     ):
@@ -147,7 +145,7 @@ class RoundTabsWindow(StWindow):
         self,
         container: "DeltaGenerator",
         new_tab_func: Callable[[Message], bool],
-        inner_class: Type[StWindow] = StWindow,
+        inner_class: type[StWindow] = StWindow,
         title: str = "Round tabs",
     ):
         container.markdown(f"### **{title}**")

@@ -4,11 +4,7 @@ Generate dataset to test the model workflow output
 
 from pathlib import Path
 
-from rdagent.components.coder.CoSTEER.config import CoSTEER_SETTINGS
 from rdagent.components.coder.data_science.model import ModelCoSTEER
-from rdagent.components.coder.data_science.model.eval import (
-    ModelGeneralCaseSpecEvaluator,
-)
 from rdagent.components.coder.data_science.model.exp import ModelTask
 from rdagent.core.experiment import FBWorkspace
 from rdagent.scenarios.data_science.experiment.experiment import DSExperiment
@@ -25,7 +21,7 @@ def develop_one_competition(competition: str):
         name="ModelTask",
         description="A CNN Model",
         model_type="CNN",
-        architecture="\hat{y}_u = CNN(X_u)",
+        architecture=r"\hat{y}_u = CNN(X_u)",
         # variables="variables: {'\\hat{y}_u': 'The predicted output for node u', 'X_u': 'The input features for node u'}",
         hyperparameters="...",
         base_code="",

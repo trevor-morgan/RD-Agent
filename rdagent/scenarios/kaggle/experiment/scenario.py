@@ -3,10 +3,8 @@ import json
 import pickle
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict
 
 import pandas as pd
-
 from rdagent.app.kaggle.conf import KAGGLE_IMPLEMENT_SETTING
 from rdagent.core.experiment import Task
 from rdagent.core.scenario import Scenario
@@ -62,7 +60,7 @@ class KGScenario(Scenario):
             self.vector_base.dump()
 
         self.action_counts = dict.fromkeys(KG_ACTION_LIST, 0)
-        self.reward_estimates = {action: 0.0 for action in KG_ACTION_LIST}
+        self.reward_estimates = dict.fromkeys(KG_ACTION_LIST, 0.0)
         # self.reward_estimates["Model feature selection"] = 0.2
         # self.reward_estimates["Model tuning"] = 1.0
         self.reward_estimates["Feature processing"] = 0.2
@@ -82,7 +80,7 @@ class KGScenario(Scenario):
             user_prompt=user_prompt,
             system_prompt=sys_prompt,
             json_mode=True,
-            json_target_type=Dict[str, str | bool | int],
+            json_target_type=dict[str, str | bool | int],
         )
 
         response_json_analysis = json.loads(response_analysis)
@@ -168,15 +166,15 @@ class KGScenario(Scenario):
         assert tag in [None, "feature", "model"]
         feature_output_format = f"""The feature code should output following the format:
 {T(".prompts:kg_feature_output_format").r()}"""
-        model_output_format = f"""The model code should output following the format:\n""" + T(
+        model_output_format = """The model code should output following the format:\n""" + T(
             ".prompts:kg_model_output_format"
         ).r(channel=self.model_output_channel)
 
         if tag is None:
             return feature_output_format + "\n" + model_output_format
-        elif tag == "feature":
+        if tag == "feature":
             return feature_output_format
-        elif tag == "model":
+        if tag == "model":
             return model_output_format
 
     def interface(self, tag=None) -> str:
@@ -191,8 +189,7 @@ class KGScenario(Scenario):
         )
         if tag is None:
             return feature_interface + "\n" + model_interface
-        else:
-            return model_interface
+        return model_interface
 
     def simulator(self, tag=None) -> str:
         assert tag in [None, "feature", "model"]
@@ -206,9 +203,9 @@ class KGScenario(Scenario):
 
         if tag is None:
             return kg_feature_simulator + "\n" + kg_model_simulator
-        elif tag == "feature":
+        if tag == "feature":
             return kg_feature_simulator
-        elif tag == "model":
+        if tag == "model":
             return kg_model_simulator
 
     @property
@@ -273,9 +270,8 @@ To automatically optimize performance metrics within the validation set or Kaggl
 
         if filtered_tag is None:
             return common_description() + interface(None) + output(None) + simulator(None)
-        elif filtered_tag == "hypothesis_and_experiment" or filtered_tag == "feedback":
+        if filtered_tag == "hypothesis_and_experiment" or filtered_tag == "feedback":
             return common_description() + simulator(None)
-        elif filtered_tag == "feature":
+        if filtered_tag == "feature":
             return common_description() + interface("feature") + output("feature") + simulator("feature")
-        else:
-            return common_description() + interface(filtered_tag) + output("model") + simulator("model")
+        return common_description() + interface(filtered_tag) + output("model") + simulator("model")

@@ -5,7 +5,7 @@ from collections.abc import Generator
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 
 @dataclass
@@ -15,10 +15,8 @@ class Message:
     tag: str  # namespace like like a.b.c
     level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]  # The level of the logging
     timestamp: datetime  # The time when the message is generated
-    caller: Optional[
-        str
-    ]  # The caller of the logging like `rdagent.oai.llm_utils:_create_chat_completion_inner_function:55`(file:func:line)
-    pid_trace: Optional[str]  # The process id trace;  A-B-C represents A create B, B create C
+    caller: str | None  # The caller of the logging like `rdagent.oai.llm_utils:_create_chat_completion_inner_function:55`(file:func:line)
+    pid_trace: str | None  # The process id trace;  A-B-C represents A create B, B create C
     content: object  # The content
 
 

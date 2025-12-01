@@ -5,9 +5,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import streamlit as st
-from streamlit import session_state as state
-
 from rdagent.app.data_science.conf import DS_RD_SETTING
+from streamlit import session_state as state
 
 st.set_page_config(layout="wide", page_title="RD-Agent_user_interact", page_icon="🎓", initial_sidebar_state="expanded")
 
@@ -142,7 +141,7 @@ def update_sessions():
                 session_file.unlink(missing_ok=True)
                 ret_file = log_folder / f"{session_file.stem}_RET.json"
                 ret_file.unlink(missing_ok=True)
-        except Exception as e:
+        except Exception:
             continue
     render_main_content()
 

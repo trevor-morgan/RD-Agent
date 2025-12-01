@@ -7,7 +7,6 @@ import os
 from litellm.utils import get_llm_provider
 from pydantic_ai.models.openai import OpenAIChatModel, OpenAIChatModelSettings
 from pydantic_ai.providers.litellm import LiteLLMProvider
-
 from rdagent.oai.backend.litellm import LiteLLMAPIBackend
 from rdagent.oai.llm_conf import LLM_SETTINGS
 from rdagent.oai.llm_utils import APIBackend

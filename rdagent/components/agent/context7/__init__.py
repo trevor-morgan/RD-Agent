@@ -1,7 +1,6 @@
 from typing import Optional
 
 from pydantic_ai.mcp import MCPServerStreamableHTTP
-
 from rdagent.components.agent.base import PAIAgent
 from rdagent.components.agent.context7.conf import SETTINGS
 from rdagent.log import rdagent_logger as logger
@@ -22,7 +21,7 @@ class Agent(PAIAgent):
             enable_cache=SETTINGS.enable_cache,
         )
 
-    def _build_enhanced_query(self, error_message: str, full_code: Optional[str] = None) -> str:
+    def _build_enhanced_query(self, error_message: str, full_code: str | None = None) -> str:
         """Build enhanced query using experimental prompt templates."""
         # Build context information using template
         context_info = ""

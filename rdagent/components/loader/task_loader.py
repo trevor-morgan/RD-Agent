@@ -1,6 +1,6 @@
 import json
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from rdagent.components.coder.factor_coder.factor import FactorTask
 from rdagent.components.coder.model_coder.model import ModelFBWorkspace, ModelTask
@@ -47,7 +47,7 @@ class ModelTaskLoaderJson(ModelTaskLoader):
 
     def load(self, *argT, **kwargs) -> Sequence[ModelTask]:
         # json is supposed to be in the format of {model_name: dict{model_data}}
-        model_dict = json.load(open(self.json_uri, "r"))
+        model_dict = json.load(open(self.json_uri))
         # FIXME: the model in the json file is not right due to extraction error
         #       We should fix them case by case in the future
         #
@@ -90,7 +90,7 @@ class ModelWsLoader(WsLoader[ModelTask, ModelFBWorkspace]):
         assert task.name is not None
         mti = ModelFBWorkspace(task)
         mti.prepare()
-        with open(self.path / f"{task.name}.py", "r") as f:
+        with open(self.path / f"{task.name}.py") as f:
             code = f.read()
         mti.inject_files(**{"model.py": code})
         return mti

@@ -3,8 +3,6 @@ from __future__ import annotations
 import json
 import re
 
-from pydantic import BaseModel, Field
-
 from rdagent.components.coder.model_coder.model import ModelTask
 from rdagent.components.document_reader.document_reader import (
     load_and_process_pdfs_by_langchain,
@@ -45,7 +43,7 @@ def extract_model_from_doc(doc_content: str) -> dict:
             user_prompt=current_user_prompt,
             json_mode=False,
         )
-        re_search_res = re.search(r"```json(.*)```", extract_result_resp, re.S)
+        re_search_res = re.search(r"```json(.*)```", extract_result_resp, re.DOTALL)
         ret_json_str = re_search_res.group(1) if re_search_res is not None else ""
         try:
             ret_dict = json.loads(ret_json_str)

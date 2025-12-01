@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 from fea_share_preprocess import preprocess_script
 from sklearn.metrics import mean_squared_error
-from sklearn.preprocessing import LabelEncoder
 
 # Set random seed for reproducibility
 SEED = 42

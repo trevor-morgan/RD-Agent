@@ -1,8 +1,5 @@
-import pickle
-import site
 import traceback
 from pathlib import Path
-from typing import Dict, Optional
 
 from rdagent.components.coder.CoSTEER.task import CoSTEERTask
 from rdagent.components.coder.model_coder.conf import MODEL_COSTEER_SETTINGS
@@ -19,11 +16,11 @@ class ModelTask(CoSTEERTask):
         description: str,
         architecture: str,
         *args,
-        hyperparameters: Dict[str, str],
-        training_hyperparameters: Dict[str, str],
+        hyperparameters: dict[str, str],
+        training_hyperparameters: dict[str, str],
         formulation: str = None,
-        variables: Dict[str, str] = None,
-        model_type: Optional[str] = None,
+        variables: dict[str, str] = None,
+        model_type: str | None = None,
         **kwargs,
     ) -> None:
         self.formulation: str = formulation

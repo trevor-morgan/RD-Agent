@@ -3,10 +3,8 @@ Handles conversion from a Python file to a Jupyter notebook.
 """
 
 import argparse
-from typing import Optional
 
 import nbformat
-
 from rdagent.components.coder.data_science.share.util import (
     extract_first_section_name_from_code,
     extract_function_body,
@@ -40,10 +38,10 @@ class NotebookConverter:
 
     def convert(
         self,
-        task: Optional[Task],
+        task: Task | None,
         code: str,
         stdout: str,
-        outfile: Optional[str] = None,
+        outfile: str | None = None,
         use_debug_flag: bool = False,
     ) -> str:
         """
@@ -128,7 +126,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     converter.convert(
         task=None,
-        code=open(args.inputfile, "r").read(),
+        code=open(args.inputfile).read(),
         stdout=args.stdout,
         outfile=args.outfile,
         use_debug_flag=False,

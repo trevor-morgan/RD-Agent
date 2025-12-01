@@ -1,18 +1,15 @@
 import json
-from typing import Dict, Tuple
 
 import numpy as np
-
 from rdagent.components.coder.CoSTEER.evaluators import CoSTEEREvaluator
 from rdagent.components.coder.model_coder.model import ModelFBWorkspace, ModelTask
 from rdagent.core.experiment import Task, Workspace
-from rdagent.oai.llm_conf import LLM_SETTINGS
 from rdagent.oai.llm_utils import APIBackend
 from rdagent.utils.agent.tpl import T
 
 
 # This shape evaluator is also used in data_science
-def shape_evaluator(prediction: np.ndarray, target_shape: Tuple = None) -> Tuple[str, bool]:
+def shape_evaluator(prediction: np.ndarray, target_shape: tuple = None) -> tuple[str, bool]:
     if target_shape is None or prediction is None:
         return (
             "No output generated from the model. No shape evaluation conducted.",
@@ -22,31 +19,29 @@ def shape_evaluator(prediction: np.ndarray, target_shape: Tuple = None) -> Tuple
 
     if pre_shape == target_shape:
         return "The shape of the output is correct.", True
-    else:
-        return (
-            f"The shape of the output is incorrect. Expected {target_shape}, but got {pre_shape}.",
-            False,
-        )
+    return (
+        f"The shape of the output is incorrect. Expected {target_shape}, but got {pre_shape}.",
+        False,
+    )
 
 
 def value_evaluator(
     prediction: np.ndarray,
     target: np.ndarray,
-) -> Tuple[np.ndarray, bool]:
+) -> tuple[np.ndarray, bool]:
     if prediction is None:
         return "No output generated from the model. Skip value evaluation", False
-    elif target is None:
+    if target is None:
         return (
             "No ground truth output provided. Value evaluation not impractical",
             False,
         )
-    else:
-        # Calculate the mean absolute difference
-        diff = np.mean(np.abs(target - prediction))
-        return (
-            f"The value of the output is correct. The mean absolute difference is {diff}.",
-            diff < 0.1,
-        )
+    # Calculate the mean absolute difference
+    diff = np.mean(np.abs(target - prediction))
+    return (
+        f"The value of the output is correct. The mean absolute difference is {diff}.",
+        diff < 0.1,
+    )
 
 
 class ModelCodeEvaluator(CoSTEEREvaluator):
@@ -153,7 +148,7 @@ class ModelFinalEvaluator(CoSTEEREvaluator):
                 user_prompt=user_prompt,
                 system_prompt=system_prompt,
                 json_mode=True,
-                json_target_type=Dict[str, str | bool | int],
+                json_target_type=dict[str, str | bool | int],
             ),
         )
         if isinstance(final_evaluation_dict["final_decision"], str) and final_evaluation_dict[

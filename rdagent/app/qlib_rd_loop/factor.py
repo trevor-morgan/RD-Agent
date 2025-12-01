@@ -4,12 +4,10 @@ Factor workflow with session control
 
 import asyncio
 from pathlib import Path
-from typing import Any, Optional
+from typing import Annotated, Any
 
 import fire
 import typer
-from typing_extensions import Annotated
-
 from rdagent.app.qlib_rd_loop.conf import FACTOR_PROP_SETTING
 from rdagent.components.workflow.rd_loop import RDLoop
 from rdagent.core.exception import FactorEmptyError
@@ -22,19 +20,19 @@ class FactorRDLoop(RDLoop):
     def running(self, prev_out: dict[str, Any]):
         exp = self.runner.develop(prev_out["coding"])
         if exp is None:
-            logger.error(f"Factor extraction failed.")
+            logger.error("Factor extraction failed.")
             raise FactorEmptyError("Factor extraction failed.")
         logger.log_object(exp, tag="runner result")
         return exp
 
 
 def main(
-    path: Optional[str] = None,
-    step_n: Optional[int] = None,
-    loop_n: Optional[int] = None,
+    path: str | None = None,
+    step_n: int | None = None,
+    loop_n: int | None = None,
     all_duration: str | None = None,
     checkout: Annotated[bool, typer.Option("--checkout/--no-checkout", "-c/-C")] = True,
-    checkout_path: Optional[str] = None,
+    checkout_path: str | None = None,
 ):
     """
     Auto R&D Evolving loop for fintech factors.
@@ -46,7 +44,7 @@ def main(
         dotenv run -- python rdagent/app/qlib_rd_loop/factor.py $LOG_PATH/__session__/1/0_propose  --step_n 1   # `step_n` is a optional paramter
 
     """
-    if not checkout_path is None:
+    if checkout_path is not None:
         checkout = Path(checkout_path)
 
     if path is None:

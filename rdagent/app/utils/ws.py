@@ -1,7 +1,5 @@
-from typing import Optional
 
 import typer
-
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.coder.data_science.conf import get_ds_env
 from rdagent.utils.agent.tpl import T

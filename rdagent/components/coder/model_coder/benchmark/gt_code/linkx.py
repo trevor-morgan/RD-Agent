@@ -44,8 +44,7 @@ class SparseLinear(MessagePassing):
     def message(self, weight_j: Tensor, edge_weight: OptTensor) -> Tensor:
         if edge_weight is None:
             return weight_j
-        else:
-            return edge_weight.view(-1, 1) * weight_j
+        return edge_weight.view(-1, 1) * weight_j
 
     def message_and_aggregate(self, adj_t: Adj, weight: Tensor) -> Tensor:
         return spmm(adj_t, weight, reduce=self.aggr)
@@ -142,7 +141,7 @@ class LINKX(torch.nn.Module):
         edge_index: Adj,
         edge_weight: OptTensor = None,
     ) -> Tensor:
-        """"""  # noqa: D419
+        """"""
         out = self.edge_lin(edge_index, edge_weight)
 
         if self.edge_norm is not None and self.edge_mlp is not None:

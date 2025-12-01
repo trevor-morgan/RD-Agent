@@ -32,7 +32,7 @@ class ModelCoSTEEREvaluator(CoSTEEREvaluator):
             and target_task_information in queried_knowledge.success_task_to_knowledge_dict
         ):
             return queried_knowledge.success_task_to_knowledge_dict[target_task_information].feedback
-        elif queried_knowledge is not None and target_task_information in queried_knowledge.failed_task_info_set:
+        if queried_knowledge is not None and target_task_information in queried_knowledge.failed_task_info_set:
             return ModelSingleFeedback(
                 execution_feedback="This task has failed too many times, skip implementation.",
                 shape_feedback="This task has failed too many times, skip implementation.",

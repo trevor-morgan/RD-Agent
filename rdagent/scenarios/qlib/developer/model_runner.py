@@ -1,7 +1,6 @@
 import os
 
 import pandas as pd
-
 from rdagent.components.runner import CachedRunner
 from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.core.exception import ModelEmptyError
@@ -63,7 +62,7 @@ class QlibModelRunner(CachedRunner[QlibModelExperiment]):
                 base_exp for base_exp in exp.based_experiments if isinstance(base_exp, QlibFactorExperiment)
             ]
             if len(sota_factor_experiments_list) > 1:
-                logger.info(f"SOTA factor processing ...")
+                logger.info("SOTA factor processing ...")
                 SOTA_factor = process_factor_data(sota_factor_experiments_list)
 
             if SOTA_factor is not None and not SOTA_factor.empty:

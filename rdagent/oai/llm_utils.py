@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Type
+from typing import Any
 
 import numpy as np
-
 from rdagent.core.utils import import_class
 from rdagent.oai.backend.base import APIBackend as BaseAPIBackend
 from rdagent.oai.llm_conf import LLM_SETTINGS
-from rdagent.utils import md5_hash  # for compatible with previous import
 
 
 def calculate_embedding_distance_between_str_list(
@@ -36,7 +34,7 @@ def get_api_backend(*args: Any, **kwargs: Any) -> BaseAPIBackend:  # TODO: impor
     """
     get llm api backend based on settings dynamically.
     """
-    api_backend_cls: Type[BaseAPIBackend] = import_class(LLM_SETTINGS.backend)
+    api_backend_cls: type[BaseAPIBackend] = import_class(LLM_SETTINGS.backend)
     return api_backend_cls(*args, **kwargs)
 
 

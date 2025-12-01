@@ -72,13 +72,10 @@ import os
 import reprlib
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Union
 
 import humanize
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
-
-from rdagent.log import rdagent_logger as logger
 
 # these files are treated as code (e.g. markdown wrapped)
 code_files = {".py", ".sh", ".yaml", ".yml", ".md", ".html", ".xml", ".log", ".rst"}
@@ -91,22 +88,19 @@ system_names = {"__MACOSX", ".DS_Store", "Thumbs.db"}
 class FileTreeGenerationError(Exception):
     """File tree generation related errors"""
 
-    pass
 
 
 class MaxLinesExceededError(FileTreeGenerationError):
     """Raised when max lines limit is exceeded"""
 
-    pass
 
 
 class DirectoryPermissionError(FileTreeGenerationError):
     """Raised when directory access is denied"""
 
-    pass
 
 
-def get_file_len_size(f: Path) -> Tuple[int, str]:
+def get_file_len_size(f: Path) -> tuple[int, str]:
     """
     Calculate the size of a file (#lines for plaintext files, otherwise #bytes)
     Also returns a human-readable string representation of the size.
@@ -114,9 +108,8 @@ def get_file_len_size(f: Path) -> Tuple[int, str]:
     if f.suffix in plaintext_files:
         num_lines = sum(1 for _ in open(f))
         return num_lines, f"{num_lines} lines"
-    else:
-        s = f.stat().st_size
-        return s, humanize.naturalsize(s)
+    s = f.stat().st_size
+    return s, humanize.naturalsize(s)
 
 
 def preview_df(df: pd.DataFrame, file_name: str, simple=True, show_nan_columns=False) -> str:
@@ -124,7 +117,7 @@ def preview_df(df: pd.DataFrame, file_name: str, simple=True, show_nan_columns=F
     out = []
 
     out.append(f"### {file_name}: ")
-    out.append(f"#### 1.DataFrame preview:")
+    out.append("#### 1.DataFrame preview:")
     out.append(f"It has {df.shape[0]} rows and {df.shape[1]} columns.")
 
     if simple:
@@ -195,7 +188,7 @@ def preview_json(p: Path, file_name: str):
         # First check if this is a JSONL format
         is_jsonl = False
 
-        with open(p, "r", encoding="utf-8") as f:
+        with open(p, encoding="utf-8") as f:
             first_line = f.readline().strip()
             second_line = f.readline().strip()
 
@@ -219,7 +212,7 @@ def preview_json(p: Path, file_name: str):
             jsonl_repr = reprlib.Repr()
             jsonl_repr.maxother = 300
 
-            with open(p, "r", encoding="utf-8") as f:
+            with open(p, encoding="utf-8") as f:
                 for i, line in enumerate(f):
                     if i >= 3:  # Only show first 3 objects
                         result.append("... (showing first 3 JSONL objects)")
@@ -232,7 +225,7 @@ def preview_json(p: Path, file_name: str):
                             result.append(f"Object {i+1}: Invalid JSON")
         else:
             # Single JSON file
-            with open(p, "r", encoding="utf-8") as f:
+            with open(p, encoding="utf-8") as f:
                 data = json.load(f)
 
             result.append("#### 1.Format: Single JSON object")
@@ -297,9 +290,9 @@ class FileTreeGenerator:
     def __init__(
         self,
         max_lines: int = 200,
-        priority_files: Set[str] = None,
+        priority_files: set[str] = None,
         hide_base_name: bool = True,
-        allowed_paths: Set[Path] | None = None,
+        allowed_paths: set[Path] | None = None,
     ):
         """
         Initialize the file tree generator.
@@ -317,7 +310,7 @@ class FileTreeGenerator:
         self.line_count = 0
         self.hide_base_name = hide_base_name
         self.allowed_paths = allowed_paths
-        self._lookup_set: Set[Path] | None = None
+        self._lookup_set: set[Path] | None = None
 
     def _build_lookup_set(self):
         """
@@ -335,7 +328,7 @@ class FileTreeGenerator:
                     continue
                 self._lookup_set.add(parent)
 
-    def generate_tree(self, path: Union[str, Path]) -> str:
+    def generate_tree(self, path: str | Path) -> str:
         """
         Generate a tree structure of files in a directory.
 
@@ -359,7 +352,7 @@ class FileTreeGenerator:
         except MaxLinesExceededError:
             pass  # Expected when hitting line limit
         except Exception as e:
-            raise FileTreeGenerationError(f"Failed to generate tree for {path}: {str(e)}") from e
+            raise FileTreeGenerationError(f"Failed to generate tree for {path}: {e!s}") from e
 
         # CORNER CASE HANDLING: Always check if we hit the limit and add truncation notice if needed
         #
@@ -465,10 +458,9 @@ class FileTreeGenerator:
         except OSError as e:
             if e.errno == 13:  # Permission denied
                 raise DirectoryPermissionError(f"Permission denied accessing {path}") from e
-            else:
-                raise FileTreeGenerationError(f"Error processing directory {path}: {str(e)}") from e
+            raise FileTreeGenerationError(f"Error processing directory {path}: {e!s}") from e
 
-    def _process_subdirectories(self, dirs: List[Path], depth: int, prefix: str, base_path: Path) -> None:
+    def _process_subdirectories(self, dirs: list[Path], depth: int, prefix: str, base_path: Path) -> None:
         """Process subdirectories with proper truncation logic."""
         try:
             if depth == 0 or len(dirs) <= 8:
@@ -510,7 +502,7 @@ class FileTreeGenerator:
             # If we hit the line limit, just stop processing this directory
             pass
 
-    def _process_files(self, all_files: List[Path], depth: int, prefix: str) -> None:
+    def _process_files(self, all_files: list[Path], depth: int, prefix: str) -> None:
         """Process files with proper truncation logic."""
         try:
             if depth == 0 or len(all_files) <= 8:
@@ -530,7 +522,7 @@ class FileTreeGenerator:
             # If we hit the line limit, just stop processing files
             pass
 
-    def _categorize_files(self, files: List[Path]) -> Tuple[List[Path], List[Path]]:
+    def _categorize_files(self, files: list[Path]) -> tuple[list[Path], list[Path]]:
         """Categorize files into priority and other groups."""
         priority = []
         other = []
@@ -571,7 +563,7 @@ class DataFolderDescriptor:
 
     def describe_folder(
         self,
-        base_path: Union[str, Path],
+        base_path: str | Path,
         include_file_details: bool = True,
         simple: bool = False,
         show_nan_columns: bool = False,
@@ -591,7 +583,7 @@ class DataFolderDescriptor:
 
             # Intelligently select a subset of files to preview
             files_to_preview = self._select_files_for_preview(base_path)
-            out.append(f" (Showing details for representative files out of many)")
+            out.append(" (Showing details for representative files out of many)")
 
             for fn in files_to_preview:
                 try:
@@ -605,20 +597,19 @@ class DataFolderDescriptor:
                         if fn.suffix == ".py" and "test" not in file_name:
                             out.append(f"### {file_name}:")
                             out.append(fn.read_text(encoding="utf-8"))
-                    else:
-                        if fn.suffix == ".csv":
-                            out.append(preview_csv(fn, file_name, simple=simple, show_nan_columns=show_nan_columns))
-                        elif fn.suffix == ".json":
-                            out.append(preview_json(fn, file_name))
-                        elif fn.suffix == ".parquet":
-                            out.append(preview_parquet(fn, file_name, simple=simple, show_nan_columns=show_nan_columns))
-                        elif fn.suffix in plaintext_files:
-                            if get_file_len_size(fn)[0] < 30:
-                                with open(fn) as f:
-                                    content = f.read()
-                                    if fn.suffix in code_files:
-                                        content = f"```\n{content}\n```"
-                                    out.append(f"-> {file_name} has content:\n\n{content}")
+                    elif fn.suffix == ".csv":
+                        out.append(preview_csv(fn, file_name, simple=simple, show_nan_columns=show_nan_columns))
+                    elif fn.suffix == ".json":
+                        out.append(preview_json(fn, file_name))
+                    elif fn.suffix == ".parquet":
+                        out.append(preview_parquet(fn, file_name, simple=simple, show_nan_columns=show_nan_columns))
+                    elif fn.suffix in plaintext_files:
+                        if get_file_len_size(fn)[0] < 30:
+                            with open(fn) as f:
+                                content = f.read()
+                                if fn.suffix in code_files:
+                                    content = f"```\n{content}\n```"
+                                out.append(f"-> {file_name} has content:\n\n{content}")
 
                 except Exception as e:
                     out.append(f"-> {file_name}: Error reading file - {str(e)[:100]}")
@@ -646,7 +637,7 @@ class DataFolderDescriptor:
 
     def _select_files_for_preview(
         self, base_path: Path, max_files_per_group: int = 1, threshold: int = 10
-    ) -> List[Path]:
+    ) -> list[Path]:
         """
         Intelligently select a representative subset of files for detailed preview.
         If a directory has more than `threshold` files of the same type, only `max_files_per_group` are selected.
@@ -686,14 +677,14 @@ class DataFolderDescriptor:
 
 
 # Convenience functions for backward compatibility
-def file_tree_v2(path: Union[str, Path], max_lines: int = 200, priority_files: Set[str] = None) -> str:
+def file_tree_v2(path: str | Path, max_lines: int = 200, priority_files: set[str] = None) -> str:
     """Generate a file tree using FileTreeGenerator."""
     generator = FileTreeGenerator(max_lines=max_lines, priority_files=priority_files)
     return generator.generate_tree(path)
 
 
 def describe_data_folder_v2(
-    base_path: Union[str, Path],
+    base_path: str | Path,
     include_file_details: bool = True,
     simple: bool = False,
     show_nan_columns: bool = False,

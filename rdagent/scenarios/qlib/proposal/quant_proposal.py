@@ -1,6 +1,5 @@
 import json
 import random
-from typing import Tuple
 
 from rdagent.app.qlib_rd_loop.conf import QUANT_PROP_SETTING
 from rdagent.components.proposal import FactorAndModelHypothesisGen
@@ -44,10 +43,10 @@ Reason: {self.reason}
 
 
 class QlibQuantHypothesisGen(FactorAndModelHypothesisGen):
-    def __init__(self, scen: Scenario) -> Tuple[dict, bool]:
+    def __init__(self, scen: Scenario) -> tuple[dict, bool]:
         super().__init__(scen)
 
-    def prepare_context(self, trace: Trace) -> Tuple[dict, bool]:
+    def prepare_context(self, trace: Trace) -> tuple[dict, bool]:
 
         # ========= Bandit ==========
         if QUANT_PROP_SETTING.action_selection == "bandit":

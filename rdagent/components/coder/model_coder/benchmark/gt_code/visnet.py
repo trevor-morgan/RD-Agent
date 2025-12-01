@@ -1,5 +1,4 @@
 import math
-from typing import Optional, Tuple
 
 import torch
 from torch import Tensor
@@ -83,7 +82,7 @@ class ExpNormalSmearing(torch.nn.Module):
             self.register_buffer("means", means)
             self.register_buffer("betas", betas)
 
-    def _initial_params(self) -> Tuple[Tensor, Tensor]:
+    def _initial_params(self) -> tuple[Tensor, Tensor]:
         r"""Initializes the means and betas for the radial basis functions."""
         start_value = torch.exp(torch.tensor(-self.cutoff))
         means = torch.linspace(start_value, 1, self.num_rbf)
@@ -204,7 +203,7 @@ class VecLayerNorm(torch.nn.Module):
         self,
         hidden_channels: int,
         trainable: bool,
-        norm_type: Optional[str] = "max_min",
+        norm_type: str | None = "max_min",
     ) -> None:
         super().__init__()
 
@@ -265,7 +264,7 @@ class VecLayerNorm(torch.nn.Module):
             if self.norm_type == "max_min":
                 vec = self.max_min_norm(vec)
             return vec * self.weight.unsqueeze(0).unsqueeze(0)
-        elif vec.size(1) == 8:
+        if vec.size(1) == 8:
             vec1, vec2 = torch.split(vec, [3, 5], dim=1)
             if self.norm_type == "max_min":
                 vec1 = self.max_min_norm(vec1)
@@ -308,7 +307,7 @@ class Distance(torch.nn.Module):
         self,
         pos: Tensor,
         batch: Tensor,
-    ) -> Tuple[Tensor, Tensor, Tensor]:
+    ) -> tuple[Tensor, Tensor, Tensor]:
         r"""Computes the pairwise distances between atoms in the molecule.
 
         Args:
@@ -484,7 +483,7 @@ class ViS_MP(MessagePassing):
         num_heads: int,
         hidden_channels: int,
         cutoff: float,
-        vecnorm_type: Optional[str],
+        vecnorm_type: str | None,
         trainable_vecnorm: bool,
         last_layer: bool = False,
     ) -> None:
@@ -578,7 +577,7 @@ class ViS_MP(MessagePassing):
         r_ij: Tensor,
         f_ij: Tensor,
         d_ij: Tensor,
-    ) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
+    ) -> tuple[Tensor, Tensor, Tensor | None]:
         r"""Computes the residual scalar and vector features of the nodes and
         scalar featues of the edges.
 
@@ -618,12 +617,11 @@ class ViS_MP(MessagePassing):
         if not self.last_layer:
             df_ij = self.edge_updater(edge_index, vec=vec, d_ij=d_ij, f_ij=f_ij)
             return dx, dvec, df_ij
-        else:
-            return dx, dvec, None
+        return dx, dvec, None
 
     def message(
         self, q_i: Tensor, k_j: Tensor, v_j: Tensor, vec_j: Tensor, dk: Tensor, dv: Tensor, r_ij: Tensor, d_ij: Tensor
-    ) -> Tuple[Tensor, Tensor]:
+    ) -> tuple[Tensor, Tensor]:
         attn = (q_i * k_j * dk).sum(dim=-1)
         attn = self.attn_activation(attn) * self.cutoff(r_ij).unsqueeze(1)
 
@@ -644,11 +642,11 @@ class ViS_MP(MessagePassing):
 
     def aggregate(
         self,
-        features: Tuple[Tensor, Tensor],
+        features: tuple[Tensor, Tensor],
         index: Tensor,
-        ptr: Optional[torch.Tensor],
-        dim_size: Optional[int],
-    ) -> Tuple[Tensor, Tensor]:
+        ptr: torch.Tensor | None,
+        dim_size: int | None,
+    ) -> tuple[Tensor, Tensor]:
         x, vec = features
         x = scatter(x, index, dim=self.node_dim, dim_size=dim_size)
         vec = scatter(vec, index, dim=self.node_dim, dim_size=dim_size)
@@ -680,7 +678,7 @@ class ViS_MP_Vertex(ViS_MP):
         num_heads: int,
         hidden_channels: int,
         cutoff: float,
-        vecnorm_type: Optional[str],
+        vecnorm_type: str | None,
         trainable_vecnorm: bool,
         last_layer: bool = False,
     ) -> None:
@@ -752,7 +750,7 @@ class ViSNetBlock(torch.nn.Module):
     def __init__(
         self,
         lmax: int = 1,
-        vecnorm_type: Optional[str] = None,
+        vecnorm_type: str | None = None,
         trainable_vecnorm: bool = False,
         num_heads: int = 8,
         num_layers: int = 6,
@@ -824,7 +822,7 @@ class ViSNetBlock(torch.nn.Module):
         z: Tensor,
         pos: Tensor,
         batch: Tensor,
-    ) -> Tuple[Tensor, Tensor]:
+    ) -> tuple[Tensor, Tensor]:
         r"""Computes the scalar and vector features of the nodes.
 
         Args:
@@ -885,7 +883,7 @@ class GatedEquivariantBlock(torch.nn.Module):
         self,
         hidden_channels: int,
         out_channels: int,
-        intermediate_channels: Optional[int] = None,
+        intermediate_channels: int | None = None,
         scalar_activation: bool = False,
     ) -> None:
         super().__init__()
@@ -916,7 +914,7 @@ class GatedEquivariantBlock(torch.nn.Module):
         torch.nn.init.xavier_uniform_(self.update_net[2].weight)
         self.update_net[2].bias.data.zero_()
 
-    def forward(self, x: Tensor, v: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, x: Tensor, v: Tensor) -> tuple[Tensor, Tensor]:
         r"""Applies a gated equivariant operation to node features and vector
         features.
 
@@ -999,7 +997,7 @@ class Atomref(torch.nn.Module):
 
     def __init__(
         self,
-        atomref: Optional[Tensor] = None,
+        atomref: Tensor | None = None,
         max_z: int = 100,
     ) -> None:
         super().__init__()
@@ -1077,7 +1075,7 @@ class ViSNet(torch.nn.Module):
     def __init__(
         self,
         lmax: int = 1,
-        vecnorm_type: Optional[str] = None,
+        vecnorm_type: str | None = None,
         trainable_vecnorm: bool = False,
         num_heads: int = 8,
         num_layers: int = 6,
@@ -1088,7 +1086,7 @@ class ViSNet(torch.nn.Module):
         cutoff: float = 5.0,
         max_num_neighbors: int = 32,
         vertex: bool = False,
-        atomref: Optional[Tensor] = None,
+        atomref: Tensor | None = None,
         reduce_op: str = "sum",
         mean: float = 0.0,
         std: float = 1.0,
@@ -1133,7 +1131,7 @@ class ViSNet(torch.nn.Module):
         z: Tensor,
         pos: Tensor,
         batch: Tensor,
-    ) -> Tuple[Tensor, Optional[Tensor]]:
+    ) -> tuple[Tensor, Tensor | None]:
         r"""Computes the energies or properties (forces) for a batch of
         molecules.
 

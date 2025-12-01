@@ -1,8 +1,7 @@
 import pandas as pd
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
+from torch import nn, optim
 from torch.utils.data import DataLoader, TensorDataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

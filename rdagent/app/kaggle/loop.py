@@ -2,7 +2,6 @@ import subprocess
 from typing import Any
 
 import fire
-
 from rdagent.app.kaggle.conf import KAGGLE_IMPLEMENT_SETTING
 from rdagent.components.workflow.conf import BasePropSetting
 from rdagent.components.workflow.rd_loop import RDLoop

@@ -1,9 +1,7 @@
 import re
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
-
 from rdagent.components.coder.model_coder.conf import MODEL_COSTEER_SETTINGS
 from rdagent.core.experiment import FBWorkspace
 from rdagent.log import rdagent_logger as logger
@@ -54,6 +52,5 @@ class QlibFBWorkspace(FBWorkspace):
             matches = re.findall(pattern, execute_qlib_log)
             execute_qlib_log = "\n".join(matches)
             return pd.read_csv(qlib_res_path, index_col=0).iloc[:, 0], execute_qlib_log
-        else:
-            logger.error(f"File {qlib_res_path} does not exist.")
-            return None, execute_qlib_log
+        logger.error(f"File {qlib_res_path} does not exist.")
+        return None, execute_qlib_log

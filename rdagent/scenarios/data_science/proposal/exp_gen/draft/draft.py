@@ -1,13 +1,9 @@
 import json
-from typing import TYPE_CHECKING, Any, Dict, List
-
-from pydantic import BaseModel, Field
 
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.coder.data_science.ensemble.exp import EnsembleTask
 from rdagent.components.coder.data_science.feature.exp import FeatureTask
 from rdagent.components.coder.data_science.model.exp import ModelTask
-from rdagent.components.coder.data_science.pipeline.exp import PipelineTask
 from rdagent.components.coder.data_science.raw_data_loader.exp import DataLoaderTask
 from rdagent.components.coder.data_science.workflow.exp import WorkflowTask
 from rdagent.core.proposal import ExpGen, Hypothesis
@@ -143,7 +139,7 @@ class DSDraftV2ExpGen(ExpGen):
             user_prompt=user_prompt,
             system_prompt=sys_prompt,
             json_mode=True,
-            json_target_type=Dict[str, str],
+            json_target_type=dict[str, str],
         )
         return json.loads(response)["tag"].lower()
 
@@ -171,7 +167,7 @@ class DSDraftV2ExpGen(ExpGen):
             user_prompt=user_prompt,
             system_prompt=sys_prompt,
             json_mode=True,
-            json_target_type=Dict[str, str],
+            json_target_type=dict[str, str],
         )
         resp_dict = json.loads(response)
         return DSHypothesis(
@@ -210,7 +206,7 @@ class DSDraftV2ExpGen(ExpGen):
             user_prompt=user_prompt,
             system_prompt=sys_prompt,
             response_format=CodingSketch if self.supports_response_schema else {"type": "json_object"},
-            json_target_type=Dict[str, str | Dict[str, str]] if not self.supports_response_schema else None,
+            json_target_type=dict[str, str | dict[str, str]] if not self.supports_response_schema else None,
         )
         task_dict = json.loads(response)
         task_design = (

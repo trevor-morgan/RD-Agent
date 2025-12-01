@@ -3,7 +3,7 @@ import io
 import re
 import tokenize
 from itertools import zip_longest
-from typing import List, Optional, Set, Tuple, TypedDict
+from typing import TypedDict
 
 
 class CodeSection(TypedDict):
@@ -11,13 +11,13 @@ class CodeSection(TypedDict):
     Represents a section of the original Python source code, to be converted to a notebook cell.
     """
 
-    name: Optional[str]
-    code: Optional[str]
-    comments: Optional[str]
-    output: Optional[str]
+    name: str | None
+    code: str | None
+    comments: str | None
+    output: str | None
 
 
-def extract_function_body(source_code: str, function_name: str) -> Optional[str]:
+def extract_function_body(source_code: str, function_name: str) -> str | None:
     """
     Extracts the body of a function from the source code.
     Returns None if the function is not found.
@@ -37,8 +37,8 @@ def extract_function_body(source_code: str, function_name: str) -> Optional[str]
 
 
 def split_sections(
-    text: str, section_header_regex: str, known_sections: Optional[list[str]] = None
-) -> tuple[Optional[str], list[str], list[str]]:
+    text: str, section_header_regex: str, known_sections: list[str] | None = None
+) -> tuple[str | None, list[str], list[str]]:
     """
     Split text into sections based on the section headers.
     """
@@ -76,14 +76,14 @@ def split_sections(
     return header_section, sections, section_names
 
 
-def split_code_sections(source_code: str) -> tuple[Optional[str], list[str]]:
+def split_code_sections(source_code: str) -> tuple[str | None, list[str]]:
     """
     Split code into sections based on the section headers.
     """
     return split_sections(source_code, r'^print\(["\']Section: (.+)["\']\)')
 
 
-def split_output_sections(stdout: str, known_sections: list[str]) -> tuple[Optional[str], list[str]]:
+def split_output_sections(stdout: str, known_sections: list[str]) -> tuple[str | None, list[str]]:
     """
     Split output into sections based on the section headers.
     """
@@ -91,7 +91,7 @@ def split_output_sections(stdout: str, known_sections: list[str]) -> tuple[Optio
     return header_section, sections
 
 
-def extract_comment_under_first_print(source_code) -> tuple[Optional[str], str]:
+def extract_comment_under_first_print(source_code) -> tuple[str | None, str]:
     """
     Extract comments from the source code after the first print statement.
     """
@@ -148,7 +148,7 @@ def extract_first_section_name_from_code(source_code):
     return None
 
 
-def extract_first_section_name_from_output(stdout: str) -> Optional[str]:
+def extract_first_section_name_from_output(stdout: str) -> str | None:
     """
     Extract the first section name from the output string.
     """
@@ -166,11 +166,7 @@ def is_function_called(source_code: str, func_name: str) -> bool:
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
             # For simple function calls like func()
-            if isinstance(node.func, ast.Name) and node.func.id == func_name:
-                return True
-
-            # For calls like module.func()
-            elif isinstance(node.func, ast.Attribute) and node.func.attr == func_name:
+            if (isinstance(node.func, ast.Name) and node.func.id == func_name) or (isinstance(node.func, ast.Attribute) and node.func.attr == func_name):
                 return True
     return False
 
@@ -223,7 +219,7 @@ def remove_main_block(source_code: str) -> str:
 
 def extract_top_level_functions_with_decorators_and_comments(
     code: str,
-) -> List[Tuple[str, str]]:
+) -> list[tuple[str, str]]:
     """
     Returns list of (function_name, source_segment) for top-level functions (excluding "main"),
     including decorators and contiguous preceding comments.
@@ -233,7 +229,7 @@ def extract_top_level_functions_with_decorators_and_comments(
     lines = code.splitlines(keepends=True)
 
     # Precompute which line numbers have comment tokens
-    comment_lines: Set[int] = set()
+    comment_lines: set[int] = set()
     lines = code.splitlines(keepends=True)  # preserve exact line content for prefix checks
 
     tokgen = tokenize.generate_tokens(io.StringIO(code).readline)  # yields (type, string, start, end, line)
@@ -284,8 +280,7 @@ def extract_top_level_functions_with_decorators_and_comments(
                 max_ln = getattr(n, "lineno", 0)
                 for child in ast.iter_child_nodes(n):
                     ln = _max_lineno(child)
-                    if ln > max_ln:
-                        max_ln = ln
+                    max_ln = max(max_ln, ln)
                 return max_ln
 
             span_end = _max_lineno(node)

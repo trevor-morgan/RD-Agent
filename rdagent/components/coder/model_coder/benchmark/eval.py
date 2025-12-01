@@ -1,6 +1,5 @@
 # TODO: inherent from the benchmark base class
 import torch
-
 from rdagent.components.coder.model_coder.model import ModelFBWorkspace
 
 

@@ -1,8 +1,5 @@
-import json
-import re
 from pathlib import Path
 
-from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.coder.CoSTEER.evaluators import (
     CoSTEEREvaluator,
     CoSTEERSingleFeedback,
@@ -13,7 +10,6 @@ from rdagent.core.evolving_framework import QueriedKnowledge
 from rdagent.core.experiment import FBWorkspace, Task
 from rdagent.utils.agent.tpl import T
 from rdagent.utils.agent.workflow import build_cls_from_json_with_retry
-from rdagent.utils.fmt import shrink_text
 
 DIRNAME = Path(__file__).absolute().resolve().parent
 
@@ -35,7 +31,7 @@ class FeatureCoSTEEREvaluator(CoSTEEREvaluator):
             and target_task_information in queried_knowledge.success_task_to_knowledge_dict
         ):
             return queried_knowledge.success_task_to_knowledge_dict[target_task_information].feedback
-        elif queried_knowledge is not None and target_task_information in queried_knowledge.failed_task_info_set:
+        if queried_knowledge is not None and target_task_information in queried_knowledge.failed_task_info_set:
             return FeatureEvalFeedback(
                 execution="This task has failed too many times, skip implementation.",
                 return_checking="This task has failed too many times, skip implementation.",

@@ -1,14 +1,11 @@
 import os
 import socket
+from typing import Annotated
 
 import docker
-import fire
-import litellm
 import typer
 from litellm import completion, embedding
 from litellm.utils import ModelResponse
-from typing_extensions import Annotated
-
 from rdagent.log import rdagent_logger as logger
 from rdagent.utils.env import cleanup_container
 
@@ -21,11 +18,11 @@ def check_docker_status() -> None:
         container = client.containers.run("hello-world", detach=True)
         logs = container.logs().decode("utf-8")
         print(logs)
-        logger.info(f"The docker status is normal")
+        logger.info("The docker status is normal")
     except docker.errors.DockerException as e:
         logger.error(f"An error occurred: {e}")
         logger.warning(
-            f"Docker status is exception, please check the docker configuration or reinstall it. Refs: https://docs.docker.com/engine/install/ubuntu/."
+            "Docker status is exception, please check the docker configuration or reinstall it. Refs: https://docs.docker.com/engine/install/ubuntu/."
         )
     finally:
         cleanup_container(container, "health check")
@@ -47,7 +44,7 @@ def check_and_list_free_ports(start_port=19899, max_ports=10) -> None:
             f"Port 19899 is occupied, please replace it with an available port when running the `rdagent ui` command. Available ports: {free_ports}"
         )
     else:
-        logger.info(f"Port 19899 is not occupied, you can run the `rdagent ui` command")
+        logger.info("Port 19899 is not occupied, you can run the `rdagent ui` command")
 
 
 def test_chat(chat_model, chat_api_key, chat_api_base):
@@ -70,7 +67,7 @@ def test_chat(chat_model, chat_api_key, chat_api_base):
                     {"role": "user", "content": "Hello!"},
                 ],
             )
-        logger.info(f"✅ Chat test passed.")
+        logger.info("✅ Chat test passed.")
         return True
     except Exception as e:
         logger.error(f"❌ Chat test failed: {e}")
@@ -96,8 +93,8 @@ def test_embedding(embedding_model, embedding_api_key, embedding_api_base):
 def env_check():
     if "BACKEND" not in os.environ:
         logger.warning(
-            f"We did not find BACKEND in your configuration, please add it to your .env file. "
-            f"You can run a command like this: `dotenv set BACKEND rdagent.oai.backend.LiteLLMAPIBackend`"
+            "We did not find BACKEND in your configuration, please add it to your .env file. "
+            "You can run a command like this: `dotenv set BACKEND rdagent.oai.backend.LiteLLMAPIBackend`"
         )
 
     if "DEEPSEEK_API_KEY" in os.environ:

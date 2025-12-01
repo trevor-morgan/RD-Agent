@@ -1,7 +1,5 @@
-from typing import Optional
 
 from pydantic_settings import SettingsConfigDict
-
 from rdagent.components.coder.CoSTEER.config import CoSTEERSettings
 from rdagent.utils.env import Env, QlibCondaConf, QlibCondaEnv, QTDockerEnv
 
@@ -14,10 +12,10 @@ class ModelCoSTEERSettings(CoSTEERSettings):
 
 
 def get_model_env(
-    conf_type: Optional[str] = None,
+    conf_type: str | None = None,
     extra_volumes: dict = {},
     running_timeout_period: int = 600,
-    enable_cache: Optional[bool] = None,
+    enable_cache: bool | None = None,
 ) -> Env:
     conf = ModelCoSTEERSettings()
     if conf.env_type == "docker":

@@ -1,9 +1,10 @@
 import json
 import pickle
 import re
+from collections.abc import Generator
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Generator, Literal
+from typing import Any, Literal
 
 from .base import Message, Storage
 from .utils import gen_datetime
@@ -59,12 +60,12 @@ class FileStorage(Storage):
                 except TypeError:
                     json.dump(json.loads(str(obj)), f)
             return path
-        elif save_type == "pkl":
+        if save_type == "pkl":
             path = path.with_suffix(".pkl")
             with path.open("wb") as f:
                 pickle.dump(obj, f)
             return path
-        elif save_type == "text":
+        if save_type == "text":
             obj = str(obj)
             with path.open("w") as f:
                 f.write(obj)

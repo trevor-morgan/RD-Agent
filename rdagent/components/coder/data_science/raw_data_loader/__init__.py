@@ -158,8 +158,7 @@ class DataLoaderMultiProcessEvolvingStrategy(MultiProcessEvolvingStrategy):
             )
             if data_loader_code != workspace.file_dict.get("load_data.py"):
                 break
-            else:
-                user_prompt = user_prompt + "\nPlease avoid generating same code to former code!"
+            user_prompt = user_prompt + "\nPlease avoid generating same code to former code!"
         else:
             raise CoderError("Failed to generate a new data loader code.")
 
@@ -231,7 +230,7 @@ class DataLoaderCoSTEER(DSCoSTEER):
             running_timeout_period=self.scen.real_full_timeout(),
         )
 
-        stdout = new_exp.experiment_workspace.execute(env=env, entry=f"python test/data_loader_test.py")
+        stdout = new_exp.experiment_workspace.execute(env=env, entry="python test/data_loader_test.py")
         match = re.search(r"(.*?)=== Start of EDA part ===(.*)=== End of EDA part ===", stdout, re.DOTALL)
         eda_output = match.groups()[1] if match else None
         if eda_output is not None:

@@ -5,7 +5,6 @@ from prefect import task
 from prefect.cache_policies import INPUTS
 from pydantic_ai import Agent
 from pydantic_ai.mcp import MCPServerStreamableHTTP
-
 from rdagent.oai.backend.pydantic_ai import get_agent_model
 
 
@@ -75,5 +74,4 @@ class PAIAgent(BaseAgent):
         """
         if self.enable_cache:
             return self._cached_query(query)
-        else:
-            return self._run_query(query)
+        return self._run_query(query)

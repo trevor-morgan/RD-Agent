@@ -45,9 +45,8 @@ def wait_retry(
                     # Update args and kwargs using the transform function if provided.
                     if transform_args_fn is not None:
                         args, kwargs = transform_args_fn(args, kwargs)
-            else:
-                # just for passing mypy CI.
-                return f(*args, **kwargs)
+            # just for passing mypy CI.
+            return f(*args, **kwargs)
 
         return wrapper
 

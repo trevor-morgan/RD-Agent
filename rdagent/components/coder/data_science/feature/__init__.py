@@ -89,8 +89,7 @@ class FeatureMultiProcessEvolvingStrategy(MultiProcessEvolvingStrategy):
             )
             if feature_code != workspace.file_dict.get("feature.py"):
                 break
-            else:
-                user_prompt = user_prompt + "\nPlease avoid generating same code to former code!"
+            user_prompt = user_prompt + "\nPlease avoid generating same code to former code!"
         else:
             raise CoderError("Failed to generate a new feature code.")
 

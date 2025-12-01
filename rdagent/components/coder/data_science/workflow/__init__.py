@@ -84,8 +84,7 @@ class WorkflowMultiProcessEvolvingStrategy(MultiProcessEvolvingStrategy):
             )
             if workflow_code != workspace.file_dict.get("main.py"):
                 break
-            else:
-                user_prompt = user_prompt + "\nPlease avoid generating same code to former code!"
+            user_prompt = user_prompt + "\nPlease avoid generating same code to former code!"
         else:
             raise CoderError("Failed to generate a new workflow code.")
 

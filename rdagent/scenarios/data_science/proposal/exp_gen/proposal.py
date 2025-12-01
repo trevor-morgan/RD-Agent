@@ -1,13 +1,10 @@
 import json
 import math
-from datetime import timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
-import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
-
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.agent.rag import Agent as RAGAgent
 from rdagent.components.coder.data_science.ensemble.exp import EnsembleTask
@@ -33,16 +30,13 @@ from rdagent.scenarios.data_science.proposal.exp_gen.planner import (
     DSExperimentPlan,
     RD_Agent_TIMER_wrapper,
 )
-from rdagent.scenarios.data_science.proposal.exp_gen.select.submit import (
-    BestValidSelector,
-)
 from rdagent.scenarios.data_science.proposal.exp_gen.utils import get_packages
 from rdagent.scenarios.kaggle.kaggle_crawler import get_metric_direction
 from rdagent.utils.agent.tpl import T
 from rdagent.utils.repo.diff import generate_diff_from_dict
 from rdagent.utils.workflow import wait_retry
 
-_COMPONENT_META: Dict[str, Dict[str, Any]] = {
+_COMPONENT_META: dict[str, dict[str, Any]] = {
     "DataLoadSpec": {
         "target_name": "Data loader and specification generation",
         "spec_file": "spec/data_loader.md",
@@ -82,7 +76,7 @@ _COMPONENT_META: Dict[str, Dict[str, Any]] = {
 }
 
 
-def get_component(name: str) -> Dict[str, Any]:
+def get_component(name: str) -> dict[str, Any]:
     meta = _COMPONENT_META.get(name)
     if meta is None:
         raise KeyError(f"Unknown component: {name!r}")
@@ -136,7 +130,7 @@ class ScenarioChallenges(BaseModel):
     analysis: ScenarioAnalysis = Field(
         description="Analysis of provided information following the Core Analysis Dimensions."
     )
-    challenges: List[ScenarioChallengeDetail] = Field(
+    challenges: list[ScenarioChallengeDetail] = Field(
         description='At most five challenges, prioritizing "FEWER BUT BETTER": '
         "select the most valuable and potentially unexplored avenues. Each challenge must be tightly relevant to the improvement of the target metric."
     )
@@ -154,13 +148,13 @@ class TraceAnalysisDetail(BaseModel):
 
 class TraceAnalysis(BaseModel):
 
-    feedback: List[TraceAnalysisDetail] = Field(
+    feedback: list[TraceAnalysisDetail] = Field(
         description="Analysis points derived from feedback on previous experiments."
     )
-    implementation_review: List[TraceAnalysisDetail] = Field(
+    implementation_review: list[TraceAnalysisDetail] = Field(
         description="Analysis points from reviewing previous code implementations."
     )
-    trace_history: List[TraceAnalysisDetail] = Field(
+    trace_history: list[TraceAnalysisDetail] = Field(
         description="Analysis points identified from the history of experiment traces."
     )
 
@@ -199,7 +193,7 @@ class TraceChallenges(BaseModel):
             "and experiment traces, which forms the basis for the challenges."
         )
     )
-    challenges: List[TraceChallengeDetail] = Field(
+    challenges: list[TraceChallengeDetail] = Field(
         description=(
             "A list of challenges and learnings (e.g., at most five, prioritizing 'FEWER BUT BETTER') derived from the analysis. "
             "Each challenge should represent a valuable learning point aimed at guiding improvements for the target metric in subsequent experiments."
@@ -265,10 +259,10 @@ class HypothesisSimple(BaseModel):
 
 
 class HypothesisList(BaseModel):
-    deduplicated_challenges: List[str] = Field(
+    deduplicated_challenges: list[str] = Field(
         description="A list of deduplicated challenge captions. Each must retain its original wording. If multiple captions are semantically identical, keep the first one."
     )
-    hypotheses: List[HypothesisDetail] = Field(
+    hypotheses: list[HypothesisDetail] = Field(
         description="A non-empty list of hypotheses proposed for the next iteration, each corresponding to one challenge. The list length should match the number of challenges."
     )
 
@@ -277,14 +271,14 @@ class CodingSketch(BaseModel):
     current_state: str = Field(
         description="A summary of the current `main.py` script that serves as the baseline for the planned changes. Focusing on parts that are related to the hypothesis. If `main.py` does not yet exist (i.e., it will be created from scratch based on this sketch), use the string 'N/A'."
     )
-    modifications: List[str] = Field(
+    modifications: list[str] = Field(
         description="A list of specific, targeted changes to be applied to the existing code identified in `current_state`. Each string in the list should concisely describe (in 3-4 sentences): "
         "(a) the specific part of the code to be altered (e.g., a function name, a class, or a logical block); "
         "(b) the nature of the modification (e.g., bug fix, feature addition, refactoring of a small section, performance optimization, deletion); and "
         "(c) a brief explanation or high-level sketch of the new logic or change. "
         "If no direct modifications to existing code are planned (e.g., if creating an entirely new `main.py` as detailed in `structure`), this list should be empty."
     )
-    structure: List[str] = Field(
+    structure: list[str] = Field(
         description="An outline of the new high-level architectural components (primarily functions and classes) if a new `main.py` script is being created from scratch, or if the existing `main.py` is undergoing a major refactor that fundamentally alters or replaces its core structure. "
         "Each string in the list should define a planned function or class, detailing its name, primary responsibility, key parameters (if applicable), return values (if applicable), and core functionality in 2-3 sentences. "
         "This field is typically used when `current_state` is 'N/A' or when the scope of change requires a new architectural blueprint rather than just targeted `modifications`. "
@@ -296,7 +290,7 @@ class CodingSketch(BaseModel):
         "The content **must** be formatted using Markdown, with logical sections, key decision points, or implementation steps clearly organized by level-3 headings (i.e., `###`). "
         "This field should provide sufficient detail for a developer to understand the implementation flow, algorithms, data handling, and key logic points without ambiguity."
     )
-    packages: List[str] = Field(
+    packages: list[str] = Field(
         default=None,
         description="A list of third-party package names (PyPI) that the planned implementation will import. "
         "Used to query the runtime environment dynamically. Leave `null` or omit if not applicable.",
@@ -310,8 +304,7 @@ def draft_exp_in_decomposition(scen: Scenario, trace: DSTrace) -> None | DSDraft
             component=next_missing_component,
             trace=trace,
         )
-    else:
-        return None
+    return None
 
 
 class DSProposalV1ExpGen(ExpGen):
@@ -379,7 +372,7 @@ class DSProposalV1ExpGen(ExpGen):
 
         resp_dict_component: dict = json.loads(
             APIBackend().build_messages_and_create_chat_completion(
-                component_user_prompt, component_sys_prompt, json_mode=True, json_target_type=Dict[str, str]
+                component_user_prompt, component_sys_prompt, json_mode=True, json_target_type=dict[str, str]
             )
         )
 
@@ -485,8 +478,7 @@ class DSProposalV1ExpGen(ExpGen):
                 )
                 exp.pending_tasks_list.append([workflow_task])
             return exp
-        else:
-            raise ValueError(f"Unknown component: {component}")
+        raise ValueError(f"Unknown component: {component}")
 
 
 class DSProposalV2ExpGen(ExpGen):
@@ -498,9 +490,9 @@ class DSProposalV2ExpGen(ExpGen):
         self,
         scenario_desc: str,
         sota_exp_desc: str,
-        exp_gen_plan: Dict,
-        sibling_exp: List[DSExperiment] | None = None,
-    ) -> Dict:
+        exp_gen_plan: dict,
+        sibling_exp: list[DSExperiment] | None = None,
+    ) -> dict:
         sibling_hypotheses = [exp.hypothesis for exp in sibling_exp] if sibling_exp else None
         sys_prompt = T(".prompts_v2:scenario_problem.system").r(
             problem_output_format=(
@@ -517,16 +509,16 @@ class DSProposalV2ExpGen(ExpGen):
             user_prompt=user_prompt,
             system_prompt=sys_prompt,
             response_format=ScenarioChallenges if self.supports_response_schema else {"type": "json_object"},
-            json_target_type=Dict[str, Dict[str, str]] if not self.supports_response_schema else None,
+            json_target_type=dict[str, dict[str, str]] if not self.supports_response_schema else None,
         )
         if self.supports_response_schema:
             challenges = ScenarioChallenges(**json.loads(response))
             # Translate to problems
             problems = {o.caption: {"problem": o.statement, "reason": o.reasoning} for o in challenges.challenges}
-            logger.info(f"Identified scenario problems:\n" + json.dumps(problems))
+            logger.info("Identified scenario problems:\n" + json.dumps(problems))
         else:
             problems = json.loads(response)
-            logger.info(f"Identified scenario problems:\n" + json.dumps(problems))
+            logger.info("Identified scenario problems:\n" + json.dumps(problems))
         return problems
 
     def identify_feedback_problem(
@@ -535,8 +527,8 @@ class DSProposalV2ExpGen(ExpGen):
         exp_feedback_list_desc: str,
         sota_exp_desc: str,
         inject_diverse: bool = False,
-        sibling_exp: List[DSExperiment] | None = None,
-    ) -> Dict:
+        sibling_exp: list[DSExperiment] | None = None,
+    ) -> dict:
         sibling_hypotheses = [exp.hypothesis for exp in sibling_exp] if sibling_exp else None
         sys_prompt = T(".prompts_v2:feedback_problem.system").r(
             problem_output_format=(
@@ -554,16 +546,16 @@ class DSProposalV2ExpGen(ExpGen):
             user_prompt=user_prompt,
             system_prompt=sys_prompt,
             response_format=TraceChallenges if self.supports_response_schema else {"type": "json_object"},
-            json_target_type=Dict[str, Dict[str, str]] if not self.supports_response_schema else None,
+            json_target_type=dict[str, dict[str, str]] if not self.supports_response_schema else None,
         )
         if self.supports_response_schema:
             challenges = TraceChallenges(**json.loads(response))
             # Translate to problems
             problems = {o.caption: {"problem": o.statement, "reason": o.reasoning} for o in challenges.challenges}
-            logger.info(f"Identified feedback problems:\n" + json.dumps(problems))
+            logger.info("Identified feedback problems:\n" + json.dumps(problems))
         else:
             problems = json.loads(response)
-            logger.info(f"Identified feedback problems:\n" + json.dumps(problems))
+            logger.info("Identified feedback problems:\n" + json.dumps(problems))
         return problems
 
     def identify_problem(
@@ -574,8 +566,8 @@ class DSProposalV2ExpGen(ExpGen):
         exp_feedback_list_desc,
         inject_diverse,
         exp_gen_plan,
-        sibling_exp: List[DSExperiment] | None = None,
-    ) -> Dict:
+        sibling_exp: list[DSExperiment] | None = None,
+    ) -> dict:
         sota_exp_num = sum(1 for _, fb in current_sub_trace if fb.decision)
         failed_exp_num = len(current_sub_trace) - sota_exp_num
         weighted_exp_num = (sota_exp_num * 3 + failed_exp_num * 2) // 2
@@ -617,10 +609,10 @@ class DSProposalV2ExpGen(ExpGen):
         enable_idea_pool: bool,
         is_new_tree: bool,
         inject_diverse: bool = False,
-        exp_gen_plan: Optional[Dict] = None,
-        sibling_exp: List[DSExperiment] | None = None,
+        exp_gen_plan: dict | None = None,
+        sibling_exp: list[DSExperiment] | None = None,
         former_user_instructions: UserInstructions | None = None,
-    ) -> Dict:
+    ) -> dict:
         problem_formatted_str = ""
         for i, (problem_name, problem_dict) in enumerate(problems.items()):
             problem_formatted_str += f"## {i+1}. {problem_name}\n"
@@ -670,7 +662,7 @@ You help users retrieve relevant knowledge from community discussions and public
             system_prompt=sys_prompt,
             response_format=HypothesisList if self.supports_response_schema else {"type": "json_object"},
             json_target_type=(
-                Dict[str, Dict[str, str | Dict[str, str | int]]] if not self.supports_response_schema else None
+                dict[str, dict[str, str | dict[str, str | int]]] if not self.supports_response_schema else None
             ),
         )
         if self.supports_response_schema:
@@ -692,7 +684,7 @@ You help users retrieve relevant knowledge from community discussions and public
             }
         else:
             resp_dict = json.loads(response)
-        logger.info(f"Generated hypotheses:\n" + json.dumps(resp_dict, indent=2))
+        logger.info("Generated hypotheses:\n" + json.dumps(resp_dict, indent=2))
 
         # make sure the problem name is aligned
         problem_keys = set(problems.keys())
@@ -706,12 +698,12 @@ You help users retrieve relevant knowledge from community discussions and public
     @wait_retry(retry_n=5)
     def hypothesis_critique(
         self,
-        hypothesis_dict: Dict,
-        problems_dict: Dict,
+        hypothesis_dict: dict,
+        problems_dict: dict,
         scenario_desc: str,
         sota_exp_desc: str,
         exp_feedback_list_desc: str,
-    ) -> Dict:
+    ) -> dict:
         """
         Critique the generated hypotheses, identifying flaws and suggesting improvements.
         """
@@ -775,14 +767,14 @@ You help users retrieve relevant knowledge from community discussions and public
     @wait_retry(retry_n=5)
     def hypothesis_rewrite(
         self,
-        hypothesis_dict: Dict,
-        critiques_dict: Dict,
+        hypothesis_dict: dict,
+        critiques_dict: dict,
         scenario_desc: str,
         sota_exp_desc: str,
         exp_feedback_list_desc: str,
-        sibling_exp: List[DSExperiment] | None = None,
+        sibling_exp: list[DSExperiment] | None = None,
         former_user_instructions: UserInstructions | None = None,
-    ) -> Dict:
+    ) -> dict:
         """
         Generate improved hypotheses based on critique feedback for each original hypothesis.
         Returns a dict with the same keys as hypothesis_dict, containing improved versions.
@@ -1022,10 +1014,8 @@ You help users retrieve relevant knowledge from community discussions and public
             bigger_is_better = get_metric_direction(competition)
             if bigger_is_better:
                 return max(score_list), len(loop_id_list)
-            else:
-                return min(score_list), len(loop_id_list)
-        else:
-            return -1, len(loop_id_list)
+            return min(score_list), len(loop_id_list)
+        return -1, len(loop_id_list)
 
     def _llm_select_extra_hypo(self, trace: DSTrace) -> list[tuple[str, float]]:
         """
@@ -1147,19 +1137,19 @@ You help users retrieve relevant knowledge from community discussions and public
             user_prompt=user_prompt,
             system_prompt=sys_prompt,
             response_format=HypothesisSimple if self.supports_response_schema else {"type": "json_object"},
-            json_target_type=(Dict[str, str] if not self.supports_response_schema else None),
+            json_target_type=(dict[str, str] if not self.supports_response_schema else None),
         )
 
         response_dict = json.loads(response)
-        assert response_dict.get("component") in HypothesisComponent.__members__, f"Invalid component"
-        assert response_dict.get("hypothesis") is not None, f"Invalid hypothesis"
+        assert response_dict.get("component") in HypothesisComponent.__members__, "Invalid component"
+        assert response_dict.get("hypothesis") is not None, "Invalid hypothesis"
         return response_dict
 
     # END: for support llm-based hypothesis selection  -----
 
     def hypothesis_rank(
-        self, hypothesis_dict: dict, problem_dict: dict, selected_idx: Optional[int] = None
-    ) -> Tuple[str, DSHypothesis]:
+        self, hypothesis_dict: dict, problem_dict: dict, selected_idx: int | None = None
+    ) -> tuple[str, DSHypothesis]:
         """
         Wrapper method that computes the top five hypotheses by weighted scoring and then selects one
         according to additional weighting rules.
@@ -1194,7 +1184,7 @@ You help users retrieve relevant knowledge from community discussions and public
         pipeline: bool,
         failed_exp_feedback_list_desc: str,
         fb_to_sota_exp: ExperimentFeedback | None = None,
-        sibling_exp: List[DSExperiment] | None = None,
+        sibling_exp: list[DSExperiment] | None = None,
         former_user_instructions: UserInstructions = None,
     ) -> DSExperiment:
         if pipeline:
@@ -1227,7 +1217,7 @@ You help users retrieve relevant knowledge from community discussions and public
             user_prompt=user_prompt,
             system_prompt=sys_prompt,
             response_format=CodingSketch if self.supports_response_schema else {"type": "json_object"},
-            json_target_type=Dict[str, str | List[str] | Dict[str, str]] if not self.supports_response_schema else None,
+            json_target_type=dict[str, str | list[str] | dict[str, str]] if not self.supports_response_schema else None,
         )
 
         task_dict = json.loads(response)
@@ -1237,13 +1227,12 @@ You help users retrieve relevant knowledge from community discussions and public
         if self.supports_response_schema:
             # task_dict: {"sketch": str, ...}
             task_desc = task_dict.get("sketch", not_found_str)
+        elif workflow_check:
+            # task_dict:  {"task_design": ...., "workflow_update": ....}
+            task_desc = task_dict.get("task_design", {}).get("description", not_found_str)
         else:
-            if workflow_check:
-                # task_dict:  {"task_design": ...., "workflow_update": ....}
-                task_desc = task_dict.get("task_design", {}).get("description", not_found_str)
-            else:
-                # task_dict:  {"description": ....}
-                task_desc = task_dict.get("description", not_found_str)
+            # task_dict:  {"description": ....}
+            task_desc = task_dict.get("description", not_found_str)
         # task_desc: str, a description of the task
 
         # 2) create the main task
@@ -1440,7 +1429,7 @@ You help users retrieve relevant knowledge from community discussions and public
                 logger.info(f"Generated critiques for {len(critiques_dict)} hypotheses")
 
                 # Rewriter Stage - Generate improved hypotheses based on critiques
-                logger.info(f"Starting rewriter stage - generating improved hypotheses based on critique feedback")
+                logger.info("Starting rewriter stage - generating improved hypotheses based on critique feedback")
                 hypothesis_dict = self.hypothesis_rewrite(
                     hypothesis_dict=hypothesis_dict,
                     critiques_dict=critiques_dict,
@@ -1450,10 +1439,10 @@ You help users retrieve relevant knowledge from community discussions and public
                     sibling_exp=sibling_exp,
                     former_user_instructions=former_user_instructions,
                 )
-                logger.info(f"Successfully completed hypothesis critique and rewrite process")
+                logger.info("Successfully completed hypothesis critique and rewrite process")
             except Exception as e:
                 logger.warning(f"Hypothesis critique and rewrite failed: {e}")
-                logger.info(f"Using original hypotheses as fallback instead of improved versions")
+                logger.info("Using original hypotheses as fallback instead of improved versions")
         else:
             logger.info(f"Hypothesis critique and rewrite disabled - using original {len(hypothesis_dict)} hypotheses")
 

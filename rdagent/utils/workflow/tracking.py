@@ -9,7 +9,6 @@ import datetime
 from typing import TYPE_CHECKING
 
 import pytz
-
 from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.log.timer import RD_Agent_TIMER_wrapper
 

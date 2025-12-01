@@ -16,7 +16,6 @@ from types import ModuleType
 from typing import Union
 
 import regex  # type: ignore[import-untyped]
-
 from rdagent.log import rdagent_logger as logger
 from rdagent.oai.llm_conf import LLM_SETTINGS
 from rdagent.utils.agent.tpl import T
@@ -25,7 +24,7 @@ from rdagent.utils.agent.tpl import T
 REGEX_TIMEOUT = 120.0
 
 
-def get_module_by_module_path(module_path: Union[str, ModuleType]) -> ModuleType:
+def get_module_by_module_path(module_path: str | ModuleType) -> ModuleType:
     """Load module from path like a/b/c/d.py or a.b.c.d
 
     :param module_path:
@@ -37,24 +36,23 @@ def get_module_by_module_path(module_path: Union[str, ModuleType]) -> ModuleType
 
     if isinstance(module_path, ModuleType):
         module = module_path
-    else:
-        if module_path.endswith(".py"):
-            module_name = re.sub("^[^a-zA-Z_]+", "", re.sub("[^0-9a-zA-Z_]", "", module_path[:-3].replace("/", "_")))
-            module_spec = importlib.util.spec_from_file_location(module_name, module_path)
-            if module_spec is None:
-                raise ModuleNotFoundError(f"Cannot find module at {module_path}")
-            module = importlib.util.module_from_spec(module_spec)
-            sys.modules[module_name] = module
-            if module_spec.loader is not None:
-                module_spec.loader.exec_module(module)
-            else:
-                raise ModuleNotFoundError(f"Cannot load module at {module_path}")
+    elif module_path.endswith(".py"):
+        module_name = re.sub("^[^a-zA-Z_]+", "", re.sub("[^0-9a-zA-Z_]", "", module_path[:-3].replace("/", "_")))
+        module_spec = importlib.util.spec_from_file_location(module_name, module_path)
+        if module_spec is None:
+            raise ModuleNotFoundError(f"Cannot find module at {module_path}")
+        module = importlib.util.module_from_spec(module_spec)
+        sys.modules[module_name] = module
+        if module_spec.loader is not None:
+            module_spec.loader.exec_module(module)
         else:
-            module = importlib.import_module(module_path)
+            raise ModuleNotFoundError(f"Cannot load module at {module_path}")
+    else:
+        module = importlib.import_module(module_path)
     return module
 
 
-def convert2bool(value: Union[str, bool]) -> bool:
+def convert2bool(value: str | bool) -> bool:
     """
     Motivation: the return value of LLM is not stable. Try to convert the value into bool
     """
@@ -66,10 +64,9 @@ def convert2bool(value: Union[str, bool]) -> bool:
         if v in ["false", "no"]:
             return False
         raise ValueError(f"Can not convert {value} to bool")
-    elif isinstance(value, bool):
+    if isinstance(value, bool):
         return value
-    else:
-        raise ValueError(f"Unknown value type {value} to bool")
+    raise ValueError(f"Unknown value type {value} to bool")
 
 
 def try_regex_sub(pattern: str, text: str, replace_with: str = "", flags: int = 0) -> str:
@@ -85,7 +82,7 @@ def try_regex_sub(pattern: str, text: str, replace_with: str = "", flags: int = 
     return text
 
 
-def filter_with_time_limit(regex_patterns: Union[str, list[str]], text: str) -> str:
+def filter_with_time_limit(regex_patterns: str | list[str], text: str) -> str:
     """
     Apply one or more regex patterns to filter `text`, using a timeout for each substitution.
     If `regex_patterns` is a list, they are applied sequentially; if a single string, only that pattern is applied.
@@ -150,7 +147,7 @@ def filter_redundant_text(stdout: str) -> str:
                 )
                 if stdout_token_size < APIBackend().chat_token_limit * 0.1:
                     return truncated_stdout
-                elif stdout_token_size > APIBackend().chat_token_limit * 0.6:
+                if stdout_token_size > APIBackend().chat_token_limit * 0.6:
                     truncated_stdout = _shrink_stdout_once(truncated_stdout)
                 else:
                     break

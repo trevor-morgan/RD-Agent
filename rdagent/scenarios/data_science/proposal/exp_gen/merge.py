@@ -2,7 +2,6 @@
 
 import json
 from datetime import timedelta
-from typing import Dict, Tuple
 
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.coder.data_science.pipeline.exp import PipelineTask
@@ -17,10 +16,6 @@ from rdagent.scenarios.data_science.proposal.exp_gen.planner import DSExperiment
 from rdagent.scenarios.data_science.proposal.exp_gen.proposal import DSProposalV2ExpGen
 from rdagent.utils.agent.tpl import T
 from rdagent.utils.workflow import wait_retry
-
-from .proposal import (
-    HypothesisComponent,  # FIXME: for statistic of other branches after running, remove this later
-)
 
 
 class MergeExpGen(ExpGen):
@@ -107,7 +102,7 @@ class ExpGen2Hypothesis(DSProposalV2ExpGen):
         exp_feedback_list_desc: str = "",
         scenario_desc: str = "",
         problems: dict = {},
-    ) -> Dict:
+    ) -> dict:
         sys_prompt = T(".merge:hypothesis_gen.system").r(
             component_desc=component_desc,
             hypothesis_output_format=T(".prompts_v2:output_format.hypothesis").r(
@@ -123,7 +118,7 @@ class ExpGen2Hypothesis(DSProposalV2ExpGen):
             user_prompt=user_prompt,
             system_prompt=sys_prompt,
             json_mode=True,
-            json_target_type=Dict[str, Dict[str, str | Dict[str, str | int]]],
+            json_target_type=dict[str, dict[str, str | dict[str, str | int]]],
         )
         resp_dict = json.loads(response)
         return resp_dict
@@ -261,15 +256,13 @@ class ExpGen2TraceAndMerge(ExpGen):
                 )  # continue the first trace. This will result in the interleaving of two traces expansion.
             trace.set_current_selection(selection)
             return self.exp_gen.gen(trace)
-        else:
-            # disable reset in merging stage
-            DS_RD_SETTING.coding_fail_reanalyze_threshold = 100000
-            DS_RD_SETTING.consecutive_errors = 100000
+        # disable reset in merging stage
+        DS_RD_SETTING.coding_fail_reanalyze_threshold = 100000
+        DS_RD_SETTING.consecutive_errors = 100000
 
-            if trace.sub_trace_count < 2:
-                return self.exp_gen.gen(trace)
-            else:
-                return self.merge_exp_gen.gen(trace)
+        if trace.sub_trace_count < 2:
+            return self.exp_gen.gen(trace)
+        return self.merge_exp_gen.gen(trace)
 
 
 class MergeExpGen_MultiTrace(ExpGen):
@@ -391,24 +384,21 @@ class ExpGen2TraceAndMergeV2(ExpGen):
 
             return self.exp_gen.gen(trace)
 
-        else:
-            # disable reset in merging stage
-            DS_RD_SETTING.coding_fail_reanalyze_threshold = 100000
-            DS_RD_SETTING.consecutive_errors = 100000
+        # disable reset in merging stage
+        DS_RD_SETTING.coding_fail_reanalyze_threshold = 100000
+        DS_RD_SETTING.consecutive_errors = 100000
 
-            leaves: list[int] = trace.get_leaves()
-            if len(leaves) < 2:
-                trace.set_current_selection(selection=(-1,))
-                return self.exp_gen.gen(trace)
-            else:
-                if not self.flag_start_merge:  # root node of the merge trace
-                    self.flag_start_merge = True
-                    trace.set_current_selection(trace.NEW_ROOT)
-                    return self.merge_exp_gen.gen(trace)
-                else:
-                    # return self.merge_exp_gen.gen(trace)
-                    trace.set_current_selection(selection=(-1,))
-                    return self.exp_gen.gen(trace)  # continue the last trace, to polish the merged solution
+        leaves: list[int] = trace.get_leaves()
+        if len(leaves) < 2:
+            trace.set_current_selection(selection=(-1,))
+            return self.exp_gen.gen(trace)
+        if not self.flag_start_merge:  # root node of the merge trace
+            self.flag_start_merge = True
+            trace.set_current_selection(trace.NEW_ROOT)
+            return self.merge_exp_gen.gen(trace)
+        # return self.merge_exp_gen.gen(trace)
+        trace.set_current_selection(selection=(-1,))
+        return self.exp_gen.gen(trace)  # continue the last trace, to polish the merged solution
 
 
 class ExpGen2TraceAndMergeV3(ExpGen):
@@ -427,21 +417,19 @@ class ExpGen2TraceAndMergeV3(ExpGen):
 
         if timer.remain_time() >= timedelta(hours=DS_RD_SETTING.merge_hours):
             return self.exp_gen.gen(trace)
-        else:
-            # disable reset in merging stage
-            DS_RD_SETTING.coding_fail_reanalyze_threshold = 100000
-            DS_RD_SETTING.consecutive_errors = 100000
+        # disable reset in merging stage
+        DS_RD_SETTING.coding_fail_reanalyze_threshold = 100000
+        DS_RD_SETTING.consecutive_errors = 100000
 
-            leaves: list[int] = trace.get_leaves()
-            if len(leaves) < 2:
-                trace.set_current_selection(selection=(-1,))
-                return self.exp_gen.gen(trace)
-            else:
-                selection = (leaves[0],)
-                if trace.sota_exp_to_submit is not None:
-                    for i in range(1, len(leaves)):
-                        if trace.is_parent(trace.exp2idx(trace.sota_exp_to_submit), leaves[i]):
-                            selection = (leaves[i],)
-                            break
-                trace.set_current_selection(selection)
-                return self.merge_exp_gen.gen(trace)
+        leaves: list[int] = trace.get_leaves()
+        if len(leaves) < 2:
+            trace.set_current_selection(selection=(-1,))
+            return self.exp_gen.gen(trace)
+        selection = (leaves[0],)
+        if trace.sota_exp_to_submit is not None:
+            for i in range(1, len(leaves)):
+                if trace.is_parent(trace.exp2idx(trace.sota_exp_to_submit), leaves[i]):
+                    selection = (leaves[i],)
+                    break
+        trace.set_current_selection(selection)
+        return self.merge_exp_gen.gen(trace)

@@ -77,7 +77,7 @@ class DataScienceScen(Scenario):
         if (fp := Path(f"{DS_RD_SETTING.local_data_path}/{self.competition}/description.md")).exists():
             logger.info(f"{self.competition}/Found description.md, loading from local file.")
             return fp.read_text()
-        elif (fp := Path(f"{DS_RD_SETTING.local_data_path}/{self.competition}.json")).exists():
+        if (fp := Path(f"{DS_RD_SETTING.local_data_path}/{self.competition}.json")).exists():
             logger.info(f"Found {self.competition}.json, loading from local file.")
             with fp.open("r") as f:
                 return json.load(f)
@@ -100,7 +100,7 @@ class DataScienceScen(Scenario):
             user_prompt=user_prompt,
             system_prompt=sys_prompt,
             json_mode=True,
-            json_target_type=Dict[str, str | int | bool],
+            json_target_type=dict[str, str | int | bool],
         )
 
         response_json_analysis = json.loads(response_analysis)

@@ -1,9 +1,7 @@
 import json
 from pathlib import Path
-from typing import Dict
 
 import pandas as pd
-
 from rdagent.core.experiment import Experiment
 from rdagent.core.proposal import Experiment2Feedback, HypothesisFeedback, Trace
 from rdagent.log import rdagent_logger as logger
@@ -96,7 +94,7 @@ class QlibFactorExperiment2Feedback(Experiment2Feedback):
             user_prompt=usr_prompt,
             system_prompt=sys_prompt,
             json_mode=True,
-            json_target_type=Dict[str, str | bool | int],
+            json_target_type=dict[str, str | bool | int],
         )
 
         # Parse the JSON response to extract the feedback
@@ -161,7 +159,7 @@ class QlibModelExperiment2Feedback(Experiment2Feedback):
             user_prompt=user_prompt,
             system_prompt=sys_prompt,
             json_mode=True,
-            json_target_type=Dict[str, str | bool | int],
+            json_target_type=dict[str, str | bool | int],
         )
 
         # Parse the JSON response to extract the feedback
@@ -172,7 +170,7 @@ class QlibModelExperiment2Feedback(Experiment2Feedback):
             user_prompt=user_prompt,
             system_prompt=sys_prompt,
             json_mode=True,
-            json_target_type=Dict[str, str | bool | int],
+            json_target_type=dict[str, str | bool | int],
         )
 
         # Parse the JSON response to extract the feedback

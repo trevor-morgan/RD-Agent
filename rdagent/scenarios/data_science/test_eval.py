@@ -40,8 +40,7 @@ class TestEvalBase:
         )
         if len(sample_submission_files) == 0:
             return None
-        else:
-            return sample_submission_files[0].name
+        return sample_submission_files[0].name
 
     @abstractmethod
     def is_sub_enabled(self, competition: str) -> bool:
@@ -77,7 +76,7 @@ class TestEval(TestEvalBase):
             env=self.env,
             entry=f"python grade.py {competition} | tee mle_score.txt",
         )
-        workspace.inject_files(**{file: workspace.DEL_KEY for file in ["grade.py", "submission_test.csv"]})
+        workspace.inject_files(**dict.fromkeys(["grade.py", "submission_test.csv"], workspace.DEL_KEY))
         workspace.execute(env=self.env, entry="chmod 777 mle_score.txt")
         return (workspace.workspace_path / "mle_score.txt").read_text()
 
@@ -93,7 +92,7 @@ class TestEval(TestEvalBase):
             entry=f"python submission_format_valid.py {competition}",
         )
         workspace.inject_files(
-            **{file: workspace.DEL_KEY for file in ["submission_format_valid.py", "submission_test.csv"]}
+            **dict.fromkeys(["submission_format_valid.py", "submission_test.csv"], workspace.DEL_KEY)
         )
         workspace.inject_files(**{"test/mle_submission_format_test.output": submission_result.stdout})
         return submission_result.stdout, submission_result.exit_code

@@ -1,5 +1,4 @@
 import json
-from typing import List, Tuple
 
 from rdagent.components.coder.model_coder.model import ModelExperiment, ModelTask
 from rdagent.components.proposal import ModelHypothesis2Experiment, ModelHypothesisGen
@@ -12,10 +11,10 @@ QlibModelHypothesis = Hypothesis
 
 
 class QlibModelHypothesisGen(ModelHypothesisGen):
-    def __init__(self, scen: Scenario) -> Tuple[dict, bool]:
+    def __init__(self, scen: Scenario) -> tuple[dict, bool]:
         super().__init__(scen)
 
-    def prepare_context(self, trace: Trace) -> Tuple[dict, bool]:
+    def prepare_context(self, trace: Trace) -> tuple[dict, bool]:
         hypothesis_and_feedback = (
             T("scenarios.qlib.prompts:hypothesis_and_feedback").r(
                 trace=trace,
@@ -71,7 +70,7 @@ class QlibModelHypothesisGen(ModelHypothesisGen):
 
 
 class QlibModelHypothesis2Experiment(ModelHypothesis2Experiment):
-    def prepare_context(self, hypothesis: Hypothesis, trace: Trace) -> Tuple[dict, bool]:
+    def prepare_context(self, hypothesis: Hypothesis, trace: Trace) -> tuple[dict, bool]:
         if isinstance(trace.scen, QlibQuantScenario):
             scenario = trace.scen.get_scenario_all_desc(action="model")
         else:

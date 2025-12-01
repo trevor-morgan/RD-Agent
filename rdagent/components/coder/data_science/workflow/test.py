@@ -4,11 +4,7 @@ Generate dataset to test the workflow output
 
 from pathlib import Path
 
-from rdagent.components.coder.CoSTEER.config import CoSTEER_SETTINGS
 from rdagent.components.coder.data_science.workflow import WorkflowCoSTEER
-from rdagent.components.coder.data_science.workflow.eval import (
-    WorkflowGeneralCaseSpecEvaluator,
-)
 from rdagent.components.coder.data_science.workflow.exp import WorkflowTask
 from rdagent.core.experiment import FBWorkspace
 from rdagent.scenarios.data_science.experiment.experiment import DSExperiment

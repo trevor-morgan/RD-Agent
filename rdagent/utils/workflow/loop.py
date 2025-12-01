@@ -14,19 +14,19 @@ import copy
 import os
 import pickle
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Optional, Union, cast
+from typing import Any, cast
 
 import psutil
-from tqdm.auto import tqdm
-
 from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.log import rdagent_logger as logger
 from rdagent.log.conf import LOG_SETTINGS
 from rdagent.log.timer import RD_Agent_TIMER_wrapper, RDAgentTimer
 from rdagent.utils.workflow.tracking import WorkflowTracker
+from tqdm.auto import tqdm
 
 
 class LoopMeta(type):
@@ -127,8 +127,8 @@ class LoopBase:
         self.tracker = WorkflowTracker(self)  # Initialize tracker with this LoopBase instance
 
         # progress control
-        self.loop_n: Optional[int] = None  # remain loop count
-        self.step_n: Optional[int] = None  # remain step count
+        self.loop_n: int | None = None  # remain loop count
+        self.step_n: int | None = None  # remain step count
 
         self.semaphores: dict[str, asyncio.Semaphore] = {}
 
@@ -167,7 +167,7 @@ class LoopBase:
             self._pbar.close()
             del self._pbar
 
-    def _check_exit_conditions_on_step(self, loop_id: Optional[int] = None, step_id: Optional[int] = None) -> None:
+    def _check_exit_conditions_on_step(self, loop_id: int | None = None, step_id: int | None = None) -> None:
         """Check if the loop should continue or terminate.
 
         Raises
@@ -186,8 +186,7 @@ class LoopBase:
             if self.timer.is_timeout():
                 logger.warning("Timeout, exiting the loop.")
                 raise self.LoopTerminationError("Timer timeout")
-            else:
-                logger.info(f"Timer remaining time: {self.timer.remain_time()}")
+            logger.info(f"Timer remaining time: {self.timer.remain_time()}")
 
     async def _run_step(self, li: int, force_subproc: bool = False) -> None:
         """Execute a single step (next unrun step) in the workflow (async version with force_subproc option).
@@ -215,7 +214,7 @@ class LoopBase:
 
             with logger.tag(f"Loop_{li}.{name}"):
                 start = datetime.now(timezone.utc)
-                func: Callable[..., Any] = cast(Callable[..., Any], getattr(self, name))
+                func: Callable[..., Any] = cast("Callable[..., Any]", getattr(self, name))
 
                 next_step_idx = si + 1
                 step_forward = True
@@ -233,13 +232,12 @@ class LoopBase:
                             result = await curr_loop.run_in_executor(
                                 pool, copy.deepcopy(func), copy.deepcopy(self.loop_prev_out[li])
                             )
+                    # auto determine whether to run async or sync
+                    elif asyncio.iscoroutinefunction(func):
+                        result = await func(self.loop_prev_out[li])
                     else:
-                        # auto determine whether to run async or sync
-                        if asyncio.iscoroutinefunction(func):
-                            result = await func(self.loop_prev_out[li])
-                        else:
-                            # Default: run sync function directly
-                            result = func(self.loop_prev_out[li])
+                        # Default: run sync function directly
+                        result = func(self.loop_prev_out[li])
                     # Store result in the nested dictionary
                     self.loop_prev_out[li][name] = result
                 except Exception as e:
@@ -478,7 +476,7 @@ class LoopBase:
             path = files[-1]
             logger.info(f"Loading latest session from {path}")
         with path.open("rb") as f:
-            session = cast(LoopBase, pickle.load(f))
+            session = cast("LoopBase", pickle.load(f))
 
         # set session folder
         if checkout:

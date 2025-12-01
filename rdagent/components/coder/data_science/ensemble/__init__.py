@@ -14,7 +14,6 @@ File structure
 from pathlib import Path
 
 from jinja2 import Environment, StrictUndefined
-
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.coder.CoSTEER.evaluators import (
     CoSTEERMultiEvaluator,
@@ -115,8 +114,7 @@ class EnsembleMultiProcessEvolvingStrategy(MultiProcessEvolvingStrategy):
             )
             if ensemble_code != workspace.file_dict.get("ensemble.py"):
                 break
-            else:
-                user_prompt = user_prompt + "\nPlease avoid generating same code to former code!"
+            user_prompt = user_prompt + "\nPlease avoid generating same code to former code!"
         else:
             raise CoderError("Failed to generate a new ensemble code.")
 

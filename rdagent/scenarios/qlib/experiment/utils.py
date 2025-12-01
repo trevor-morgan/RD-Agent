@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pandas as pd
 from jinja2 import Environment, StrictUndefined
-
 from rdagent.components.coder.factor_coder.config import FACTOR_COSTEER_SETTINGS
 from rdagent.utils.env import QTDockerEnv
 
@@ -18,7 +17,7 @@ def generate_data_folder_from_qlib():
     # Run the Qlib backtest
     execute_log = qtde.check_output(
         local_path=str(template_path),
-        entry=f"python generate.py",
+        entry="python generate.py",
     )
 
     assert (Path(__file__).parent / "factor_data_template" / "daily_pv_all.h5").exists(), (
@@ -131,7 +130,7 @@ def get_file_desc(p: Path, variable_list=[]) -> str:
             content=df_info,
         )
 
-    elif p.name.endswith(".md"):
+    if p.name.endswith(".md"):
         with open(p) as f:
             content = f.read()
             return JJ_TPL.render(

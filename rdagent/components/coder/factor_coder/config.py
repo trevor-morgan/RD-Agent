@@ -1,8 +1,6 @@
 import os
-from typing import Optional
 
 from pydantic_settings import SettingsConfigDict
-
 from rdagent.components.coder.CoSTEER.config import CoSTEERSettings
 from rdagent.utils.env import CondaConf, Env, LocalEnv
 
@@ -30,10 +28,10 @@ class FactorCoSTEERSettings(CoSTEERSettings):
 
 
 def get_factor_env(
-    conf_type: Optional[str] = None,
+    conf_type: str | None = None,
     extra_volumes: dict = {},
     running_timeout_period: int = 600,
-    enable_cache: Optional[bool] = None,
+    enable_cache: bool | None = None,
 ) -> Env:
     conf = FactorCoSTEERSettings()
     if hasattr(conf, "python_bin"):

@@ -1,10 +1,7 @@
-import subprocess
-import zipfile
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import Any
 
 import pandas as pd
-
 from rdagent.app.kaggle.conf import KAGGLE_IMPLEMENT_SETTING
 from rdagent.core.experiment import FBWorkspace
 from rdagent.log import rdagent_logger as logger
@@ -29,7 +26,7 @@ class KGFBWorkspace(FBWorkspace):
     def __init__(self, template_folder_path: Path, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.inject_code_from_folder(template_folder_path)
-        self.data_description: List[Tuple[str, int]] = []
+        self.data_description: list[tuple[str, int]] = []
 
     @property
     def model_description(self) -> dict[str, str]:
@@ -65,9 +62,8 @@ class KGFBWorkspace(FBWorkspace):
         if len(results) == 0:
             logger.error("Feature preprocess failed.")
             raise Exception("Feature preprocess failed.")
-        else:
-            X_train, X_valid, y_train, y_valid, X_test, others = results
-            return X_train, X_valid, y_train, y_valid, X_test, *others
+        X_train, X_valid, y_train, y_valid, X_test, others = results
+        return X_train, X_valid, y_train, y_valid, X_test, *others
 
     def execute(self, run_env: dict = {}, *args, **kwargs) -> str:
         logger.info(f"Running the experiment in {self.workspace_path}")

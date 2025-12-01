@@ -1,10 +1,6 @@
-import json
-import re
 from pathlib import Path
 
 from jinja2 import Environment, StrictUndefined
-
-from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.coder.CoSTEER.evaluators import (
     CoSTEEREvaluator,
     CoSTEERSingleFeedback,
@@ -39,7 +35,7 @@ class EnsembleCoSTEEREvaluator(CoSTEEREvaluator):
             and target_task_information in queried_knowledge.success_task_to_knowledge_dict
         ):
             return queried_knowledge.success_task_to_knowledge_dict[target_task_information].feedback
-        elif queried_knowledge is not None and target_task_information in queried_knowledge.failed_task_info_set:
+        if queried_knowledge is not None and target_task_information in queried_knowledge.failed_task_info_set:
             return EnsembleEvalFeedback(
                 execution="This task has failed too many times, skip implementation.",
                 code="This task has failed too many times, skip implementation.",

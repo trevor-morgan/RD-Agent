@@ -1,5 +1,4 @@
 import math
-import pickle
 import re
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
@@ -12,8 +11,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import typer
-from matplotlib import pyplot as plt
-
 from rdagent.app.data_science.loop import DataScienceRDLoop
 from rdagent.core.proposal import Trace
 from rdagent.core.utils import cache_with_pickle
@@ -248,7 +245,7 @@ def get_sota_exp_stat(
         sota_mle_score = extract_json(
             [i.content for i in log_storage.iter_msg(tag=f"Loop_{sota_loop_id}.running.mle_score")][0]
         )
-    except Exception as e:
+    except Exception:
         # sota exp is not tested yet
         return sota_exp, sota_loop_id, None, None
 
@@ -370,7 +367,7 @@ def load_times_deprecated(log_path: Path):
         rdloop_obj_p = next((session_path / str(max_li)).glob(f"{max_step}_*"))
 
         rd_times = DataScienceRDLoop.load(rdloop_obj_p).loop_trace
-    except Exception as e:
+    except Exception:
         rd_times = {}
     return rd_times
 
@@ -421,7 +418,7 @@ if UI_SETTING.enable_cache:
 
 
 def _log_folders_summary_hash_func(log_folder: str | Path, hours: int | None = None):
-    summary_p = Path(log_folder) / (f"summary.pkl" if hours is None else f"summary_{hours}h.pkl")
+    summary_p = Path(log_folder) / ("summary.pkl" if hours is None else f"summary_{hours}h.pkl")
     if summary_p.exists():
         hash_str = str(summary_p) + str(summary_p.stat().st_mtime)
     else:
@@ -562,7 +559,7 @@ def get_summary_df(log_folder: str | Path, hours: int | None = None) -> tuple[di
             return None
         try:
             c_value = math.exp(abs(math.log(s1 / s2)))
-        except Exception as e:
+        except Exception:
             c_value = None
         return c_value
 
@@ -997,7 +994,7 @@ def timeline_figure(times_dict: dict[int, dict[str, dict[Literal["start_time", "
 
     # Create DataFrame and sort by loop ID in descending order
     df = pd.DataFrame(timeline_data)
-    df["loop_sort"] = df["Loop_ID"].str.extract("(\d+)").astype(int)
+    df["loop_sort"] = df["Loop_ID"].str.extract(r"(\d+)").astype(int)
     df = df.sort_values("loop_sort", ascending=False)
 
     # Create timeline with enhanced styling
@@ -1018,10 +1015,10 @@ def timeline_figure(times_dict: dict[int, dict[str, dict[Literal["start_time", "
         marker=dict(line=dict(width=1, color="rgba(255,255,255,0.8)"), opacity=0.85),
         width=0.9,  # Increased from 0.8 to make bars thicker and reduce spacing
         hovertemplate="<b>%{hovertext}</b><br>"
-        + "Start: %{base}<br>"
-        + "End: %{x}<br>"
-        + "Duration: %{customdata[0]}<br>"
-        + "<extra></extra>",
+         "Start: %{base}<br>"
+         "End: %{x}<br>"
+         "Duration: %{customdata[0]}<br>"
+         "<extra></extra>",
     )
 
     # Beautiful layout with gradients and shadows

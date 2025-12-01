@@ -267,7 +267,7 @@ class SubplotsGraph:
                     ),
                 )
             else:
-                raise TypeError()
+                raise TypeError
 
             row = column_map["row"]
             col = column_map["col"]
@@ -387,9 +387,9 @@ def report_figure(df: pd.DataFrame) -> list | tuple:
     _subplot_layout = dict()
     for i in range(1, 8):
         # yaxis
-        _subplot_layout.update({"yaxis{}".format(i): dict(zeroline=True, showline=True, showticklabels=True)})
+        _subplot_layout.update({f"yaxis{i}": dict(zeroline=True, showline=True, showticklabels=True)})
         _show_line = i == 7
-        _subplot_layout.update({"xaxis{}".format(i): dict(showline=_show_line, type="category", tickangle=45)})
+        _subplot_layout.update({f"xaxis{i}": dict(showline=_show_line, type="category", tickangle=45)})
 
     _layout_style = dict(
         height=1200,

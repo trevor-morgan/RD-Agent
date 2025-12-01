@@ -1,7 +1,6 @@
 import os
 
 from pydantic_settings import SettingsConfigDict
-
 from rdagent.components.workflow.conf import BasePropSetting
 
 

@@ -1,11 +1,7 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
 
 import pandas as pd
-from tqdm import tqdm
-
-from rdagent.components.coder.factor_coder.config import FACTOR_COSTEER_SETTINGS
 from rdagent.components.coder.factor_coder.eva_utils import (
     FactorCorrelationEvaluator,
     FactorEqualValueRatioEvaluator,
@@ -21,10 +17,11 @@ from rdagent.core.exception import CoderError
 from rdagent.core.experiment import Experiment, Task, Workspace
 from rdagent.core.scenario import Scenario
 from rdagent.core.utils import multiprocessing_wrapper
+from tqdm import tqdm
 
-EVAL_RES = Dict[
+EVAL_RES = dict[
     str,
-    List[Tuple[FactorEvaluator, Union[object, CoderError]]],
+    list[tuple[FactorEvaluator, object | CoderError]],
 ]
 
 
@@ -68,7 +65,7 @@ class BaseEval:
 
     def __init__(
         self,
-        evaluator_l: List[FactorEvaluator],
+        evaluator_l: list[FactorEvaluator],
         test_cases: TestCases,
         generate_method: Developer,
         catch_eval_except: bool = True,
@@ -89,9 +86,9 @@ class BaseEval:
 
     def load_cases_to_eval(
         self,
-        path: Union[Path, str],
+        path: Path | str,
         **kwargs,
-    ) -> List[Workspace]:
+    ) -> list[Workspace]:
         path = Path(path)
         fi_l = []
         for tc in self.test_cases:
@@ -106,7 +103,7 @@ class BaseEval:
         self,
         case_gt: Workspace,
         case_gen: Workspace,
-    ) -> List[Union[Tuple[FactorEvaluator, object], Exception]]:
+    ) -> list[tuple[FactorEvaluator, object] | Exception]:
         """Parameters
         ----------
         case_gt : FactorImplementation
@@ -203,7 +200,7 @@ class FactorImplementEval(BaseEval):
         for factor_name, runs in res.items():
             for fi, err_or_res_l in runs:
                 # NOTE:  str(fi) may not be unique!!  Because the workspace can be skipped when hitting the cache.
-                uniq_key = f"{str(fi)},{id(fi)}"
+                uniq_key = f"{fi!s},{id(fi)}"
 
                 key = (factor_name, uniq_key)
                 val = {}

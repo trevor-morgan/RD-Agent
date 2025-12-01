@@ -1,14 +1,11 @@
 import io
 import json
 from abc import abstractmethod
-from typing import Dict, Tuple
 
 import pandas as pd
-
 from rdagent.components.coder.factor_coder.config import FACTOR_COSTEER_SETTINGS
 from rdagent.components.coder.factor_coder.factor import FactorTask
 from rdagent.core.experiment import Task, Workspace
-from rdagent.oai.llm_conf import LLM_SETTINGS
 from rdagent.oai.llm_utils import APIBackend
 from rdagent.utils.agent.tpl import T
 
@@ -26,7 +23,7 @@ class FactorEvaluator:
         implementation: Workspace,
         gt_implementation: Workspace,
         **kwargs,
-    ) -> Tuple[str, object]:
+    ) -> tuple[str, object]:
         """You can get the dataframe by
 
         .. code-block:: python
@@ -122,7 +119,7 @@ class FactorInfEvaluator(FactorEvaluator):
         self,
         implementation: Workspace,
         gt_implementation: Workspace,
-    ) -> Tuple[str, object]:
+    ) -> tuple[str, object]:
         _, gen_df = self._get_df(gt_implementation, implementation)
         if gen_df is None:
             return (
@@ -132,11 +129,10 @@ class FactorInfEvaluator(FactorEvaluator):
         INF_count = gen_df.isin([float("inf"), -float("inf")]).sum().sum()
         if INF_count == 0:
             return "The source dataframe does not have any infinite values.", True
-        else:
-            return (
-                f"The source dataframe has {INF_count} infinite values. Please check the implementation.",
-                False,
-            )
+        return (
+            f"The source dataframe has {INF_count} infinite values. Please check the implementation.",
+            False,
+        )
 
 
 class FactorSingleColumnEvaluator(FactorEvaluator):
@@ -144,7 +140,7 @@ class FactorSingleColumnEvaluator(FactorEvaluator):
         self,
         implementation: Workspace,
         gt_implementation: Workspace,
-    ) -> Tuple[str, object]:
+    ) -> tuple[str, object]:
         _, gen_df = self._get_df(gt_implementation, implementation)
         if gen_df is None:
             return (
@@ -153,11 +149,10 @@ class FactorSingleColumnEvaluator(FactorEvaluator):
             )
         if len(gen_df.columns) == 1:
             return "The source dataframe has only one column which is correct.", True
-        else:
-            return (
-                "The source dataframe has more than one column. Please check the implementation. We only evaluate the first column.",
-                False,
-            )
+        return (
+            "The source dataframe has more than one column. Please check the implementation. We only evaluate the first column.",
+            False,
+        )
 
 
 class FactorOutputFormatEvaluator(FactorEvaluator):
@@ -165,7 +160,7 @@ class FactorOutputFormatEvaluator(FactorEvaluator):
         self,
         implementation: Workspace,
         gt_implementation: Workspace,
-    ) -> Tuple[str, object]:
+    ) -> tuple[str, object]:
         gt_df, gen_df = self._get_df(gt_implementation, implementation)
         if gen_df is None:
             return (
@@ -195,7 +190,7 @@ class FactorOutputFormatEvaluator(FactorEvaluator):
                     user_prompt=gen_df_info_str,
                     system_prompt=system_prompt,
                     json_mode=True,
-                    json_target_type=Dict[str, str | bool | int],
+                    json_target_type=dict[str, str | bool | int],
                 )
                 resp_dict = json.loads(resp)
                 resp_dict["output_format_decision"] = str(resp_dict["output_format_decision"]).lower() in ["true", "1"]
@@ -219,7 +214,7 @@ class FactorDatetimeDailyEvaluator(FactorEvaluator):
         self,
         implementation: Workspace,
         gt_implementation: Workspace,
-    ) -> Tuple[str | object]:
+    ) -> tuple[str | object]:
         _, gen_df = self._get_df(gt_implementation, implementation)
         if gen_df is None:
             return "The source dataframe is None. Skip the evaluation of the datetime format.", False
@@ -249,7 +244,7 @@ class FactorRowCountEvaluator(FactorEvaluator):
         self,
         implementation: Workspace,
         gt_implementation: Workspace,
-    ) -> Tuple[str, object]:
+    ) -> tuple[str, object]:
         gt_df, gen_df = self._get_df(gt_implementation, implementation)
         if gen_df is None:
             return (
@@ -260,7 +255,7 @@ class FactorRowCountEvaluator(FactorEvaluator):
         return (
             (
                 f"The ratio of rows count in the source dataframe to the ground truth dataframe is {ratio:.2f}. "
-                + "Please verify the implementation. "
+                 "Please verify the implementation. "
                 if ratio <= 0.99
                 else ""
             ),
@@ -273,7 +268,7 @@ class FactorIndexEvaluator(FactorEvaluator):
         self,
         implementation: Workspace,
         gt_implementation: Workspace,
-    ) -> Tuple[str, object]:
+    ) -> tuple[str, object]:
         gt_df, gen_df = self._get_df(gt_implementation, implementation)
         if gen_df is None:
             return (
@@ -285,7 +280,7 @@ class FactorIndexEvaluator(FactorEvaluator):
         return (
             (
                 f"The source dataframe and the ground truth dataframe have different index with a similarity of {similarity:.2%}. The similarity is calculated by the number of shared indices divided by the union indices. "
-                + "Please check the implementation."
+                 "Please check the implementation."
                 if similarity <= 0.99
                 else ""
             ),
@@ -298,7 +293,7 @@ class FactorMissingValuesEvaluator(FactorEvaluator):
         self,
         implementation: Workspace,
         gt_implementation: Workspace,
-    ) -> Tuple[str, object]:
+    ) -> tuple[str, object]:
         gt_df, gen_df = self._get_df(gt_implementation, implementation)
         if gen_df is None:
             return (
@@ -307,11 +302,10 @@ class FactorMissingValuesEvaluator(FactorEvaluator):
             )
         if gen_df.isna().sum().sum() == gt_df.isna().sum().sum():
             return "Both dataframes have the same missing values.", True
-        else:
-            return (
-                f"The dataframes do not have the same missing values. The source dataframe has {gen_df.isna().sum().sum()} missing values, while the ground truth dataframe has {gt_df.isna().sum().sum()} missing values. Please check the implementation.",
-                False,
-            )
+        return (
+            f"The dataframes do not have the same missing values. The source dataframe has {gen_df.isna().sum().sum()} missing values, while the ground truth dataframe has {gt_df.isna().sum().sum()} missing values. Please check the implementation.",
+            False,
+        )
 
 
 class FactorEqualValueRatioEvaluator(FactorEvaluator):
@@ -319,7 +313,7 @@ class FactorEqualValueRatioEvaluator(FactorEvaluator):
         self,
         implementation: Workspace,
         gt_implementation: Workspace,
-    ) -> Tuple[str, object]:
+    ) -> tuple[str, object]:
         gt_df, gen_df = self._get_df(gt_implementation, implementation)
         if gen_df is None:
             return (
@@ -338,11 +332,10 @@ class FactorEqualValueRatioEvaluator(FactorEvaluator):
                 "All values in the dataframes are equal within the tolerance of 1e-6.",
                 acc_rate,
             )
-        else:
-            return (
-                "Some values differ by more than the tolerance of 1e-6. Check for rounding errors or differences in the calculation methods.",
-                acc_rate,
-            )
+        return (
+            "Some values differ by more than the tolerance of 1e-6. Check for rounding errors or differences in the calculation methods.",
+            acc_rate,
+        )
 
 
 class FactorCorrelationEvaluator(FactorEvaluator):
@@ -354,7 +347,7 @@ class FactorCorrelationEvaluator(FactorEvaluator):
         self,
         implementation: Workspace,
         gt_implementation: Workspace,
-    ) -> Tuple[str, object]:
+    ) -> tuple[str, object]:
         gt_df, gen_df = self._get_df(gt_implementation, implementation)
         if gen_df is None:
             return (
@@ -377,13 +370,11 @@ class FactorCorrelationEvaluator(FactorEvaluator):
                     f"The dataframes are highly correlated. The ic is {ic:.6f} and the rankic is {ric:.6f}.",
                     True,
                 )
-            else:
-                return (
-                    f"The dataframes are not sufficiently high correlated. The ic is {ic:.6f} and the rankic is {ric:.6f}. Investigate the factors that might be causing the discrepancies and ensure that the logic of the factor calculation is consistent.",
-                    False,
-                )
-        else:
-            return f"The ic is ({ic:.6f}) and the rankic is ({ric:.6f}).", ic
+            return (
+                f"The dataframes are not sufficiently high correlated. The ic is {ic:.6f} and the rankic is {ric:.6f}. Investigate the factors that might be causing the discrepancies and ensure that the logic of the factor calculation is consistent.",
+                False,
+            )
+        return f"The ic is ({ic:.6f}) and the rankic is ({ric:.6f}).", ic
 
 
 class FactorValueEvaluator(FactorEvaluator):
@@ -393,7 +384,7 @@ class FactorValueEvaluator(FactorEvaluator):
         gt_implementation: Workspace,
         version: int = 1,  # 1 for qlib factors and 2 for kaggle factors
         **kwargs,
-    ) -> Tuple:
+    ) -> tuple:
         conclusions = []
 
         # Initialize result variables
@@ -460,11 +451,11 @@ class FactorValueEvaluator(FactorEvaluator):
         # Combine all conclusions into a single string
         conclusion_str = "\n".join(conclusions)
 
-        if gt_implementation is not None and (equal_value_ratio_result > 0.99) or high_correlation_result:
+        if (gt_implementation is not None and (equal_value_ratio_result > 0.99)) or high_correlation_result:
             decision_from_value_check = True
         elif (
-            row_result is not None
-            and row_result <= 0.99
+            (row_result is not None
+            and row_result <= 0.99)
             or output_format_result is False
             or daily_check_result is False
             or inf_evaluate_res is False
@@ -483,7 +474,7 @@ class FactorFinalDecisionEvaluator(FactorEvaluator):
         value_feedback: str,
         code_feedback: str,
         **kwargs,
-    ) -> Tuple:
+    ) -> tuple:
         system_prompt = T(".prompts:evaluator_final_decision_v1_system").r(
             scenario=(
                 self.scen.get_scenario_all_desc(target_task, filtered_tag="feature")
@@ -529,7 +520,7 @@ class FactorFinalDecisionEvaluator(FactorEvaluator):
                         system_prompt=system_prompt,
                         json_mode=True,
                         seed=attempts,  # in case of useless retrying when cache enabled.
-                        json_target_type=Dict[str, str | bool | int],
+                        json_target_type=dict[str, str | bool | int],
                     ),
                 )
                 final_decision = final_evaluation_dict["final_decision"]

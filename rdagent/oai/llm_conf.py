@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Literal
 
 from pydantic import Field
-
 from rdagent.core.conf import ExtendedBaseSettings
 
 
@@ -62,7 +61,7 @@ class LLMSettings(ExtendedBaseSettings):
     # Chat configs
     openai_api_key: str = ""  # TODO: simplify the key design.
     chat_openai_api_key: str | None = None
-    chat_openai_base_url: str | None = None  #
+    chat_openai_base_url: str | None = None
     chat_azure_api_base: str = ""
     chat_azure_api_version: str = ""
     chat_max_tokens: int | None = None

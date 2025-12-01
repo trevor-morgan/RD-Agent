@@ -1,15 +1,13 @@
 import argparse
 import json
 import pickle
-import re
 import time
 from pathlib import Path
 
 import streamlit as st
-from streamlit import session_state
-
 from rdagent.log.ui.conf import UI_SETTING
 from rdagent.log.utils import extract_evoid, extract_loopid_func_name
+from streamlit import session_state
 
 st.set_page_config(layout="wide", page_title="debug_llm", page_icon="🎓", initial_sidebar_state="expanded")
 
@@ -202,10 +200,10 @@ if total_pages:
             label_visibility="collapsed",  # 隐藏标签
         )
     with col4:
-        if st.button("\>") and st.session_state["current_loop"] < total_loops:  # 下一页
+        if st.button(r"\>") and st.session_state["current_loop"] < total_loops:  # 下一页
             st.session_state["current_loop"] += 1
     with col5:
-        if st.button("\>|"):  # 最后一页
+        if st.button(r"\>|"):  # 最后一页
             st.session_state["current_loop"] = total_loops
 
     # 获取当前 Loop
@@ -264,7 +262,7 @@ if total_pages:
             system = obj.get("system", None)
             user = obj["user"]
             resp = obj["resp"]
-            with st.expander(f"**LLM**", expanded=False, icon="🤖"):
+            with st.expander("**LLM**", expanded=False, icon="🤖"):
                 t1, t2, t3 = st.tabs([":green[**Response**]", ":blue[**User**]", ":orange[**System**]"])
                 with t1:
                     try:

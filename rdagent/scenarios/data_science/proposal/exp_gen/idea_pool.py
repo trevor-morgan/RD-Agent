@@ -1,22 +1,18 @@
 import json
 from pathlib import Path
-from typing import Dict, List
 
-from tqdm import tqdm
-
-from rdagent.components.knowledge_management.graph import (
-    UndirectedNode,  # TODO: add appendix attribute to node
-)
 from rdagent.components.knowledge_management.graph import (
     UndirectedGraph,
+    UndirectedNode,  # TODO: add appendix attribute to node
 )
 from rdagent.log import rdagent_logger as logger
 from rdagent.oai.llm_utils import APIBackend
 from rdagent.utils.agent.tpl import T
+from tqdm import tqdm
 
 
 class DSIdea:
-    def __init__(self, raw_knowledge: Dict | str) -> None:
+    def __init__(self, raw_knowledge: dict | str) -> None:
         """
         {
             "idea": "A concise label summarizing the core concept of this idea.",
@@ -61,7 +57,7 @@ class DSKnowledgeBase(UndirectedGraph):
             self.build_idea_pool(idea_pool_json_path)
         self.dump()
 
-    def add_idea(self, idea: List[DSIdea] | DSIdea) -> None:
+    def add_idea(self, idea: list[DSIdea] | DSIdea) -> None:
         if not isinstance(idea, list):
             idea_list = [idea]
         else:
@@ -98,9 +94,8 @@ class DSKnowledgeBase(UndirectedGraph):
         if len(self.vector_base.vector_df) > 0:
             logger.warning("Knowledge graph is not empty, please clear it first. Ignore reading from json file.")
             return
-        else:
-            logger.info(f"Building knowledge graph from idea pool json file: {idea_pool_json_path}")
-        with open(idea_pool_json_path, "r", encoding="utf-8") as f:
+        logger.info(f"Building knowledge graph from idea pool json file: {idea_pool_json_path}")
+        with open(idea_pool_json_path, encoding="utf-8") as f:
             idea_pool_dict = json.load(f)
 
         to_add_ideas = []
@@ -115,12 +110,12 @@ class DSKnowledgeBase(UndirectedGraph):
 
     def sample_ideas(
         self,
-        problems: Dict,
+        problems: dict,
         scenario_desc: str,
         exp_feedback_list_desc: str,
         sota_exp_desc: str,
         competition_desc: str,
-    ) -> Dict:
+    ) -> dict:
         # sample ideas by cosine similarity
         text = ""
         problem_to_sampled_idea_node_id = {}
@@ -165,7 +160,7 @@ class DSKnowledgeBase(UndirectedGraph):
             user_prompt=user_prompt,
             system_prompt=sys_prompt,
             json_mode=True,
-            json_target_type=Dict[str, int],
+            json_target_type=dict[str, int],
         )
         resp_dict = json.loads(response)
 
@@ -179,7 +174,7 @@ class DSKnowledgeBase(UndirectedGraph):
 
         return problems
 
-    def update_pickled_problem(self, problems: Dict, pickled_problem_name: str) -> None:
+    def update_pickled_problem(self, problems: dict, pickled_problem_name: str) -> None:
         pickled_id = problems[pickled_problem_name].get("idea_node_id", None)
         if pickled_id is not None:
             self.used_idea_id_set.add(pickled_id)

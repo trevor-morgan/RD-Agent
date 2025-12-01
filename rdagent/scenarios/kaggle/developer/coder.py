@@ -1,8 +1,6 @@
 import json
-from typing import Dict, List
 
 from jinja2 import Environment, StrictUndefined
-
 from rdagent.components.coder.factor_coder import FactorCoSTEER
 from rdagent.components.coder.model_coder import ModelCoSTEER
 from rdagent.core.developer import Developer
@@ -56,7 +54,7 @@ class KGModelFeatureSelectionCoder(Developer[KGModelExperiment]):
                     user_prompt=user_prompt,
                     system_prompt=system_prompt,
                     json_mode=True,
-                    json_target_type=Dict[str, List[int]],
+                    json_target_type=dict[str, list[int]],
                 )
             ).get("Selected Group Index", [i + 1 for i in range(len(exp.experiment_workspace.data_description))])
             chosen_index_to_list_index = [i - 1 for i in chosen_index]

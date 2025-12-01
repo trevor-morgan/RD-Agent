@@ -3,7 +3,6 @@ import re
 from pathlib import Path
 
 import pandas as pd
-
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.coder.CoSTEER.evaluators import (
     CoSTEEREvaluator,
@@ -47,7 +46,7 @@ class WorkflowGeneralCaseSpecEvaluator(CoSTEEREvaluator):
             and target_task_information in queried_knowledge.success_task_to_knowledge_dict
         ):
             return queried_knowledge.success_task_to_knowledge_dict[target_task_information].feedback
-        elif queried_knowledge is not None and target_task_information in queried_knowledge.failed_task_info_set:
+        if queried_knowledge is not None and target_task_information in queried_knowledge.failed_task_info_set:
             return WorkflowSingleFeedback(
                 execution="This task has failed too many times, skip implementation.",
                 return_checking="This task has failed too many times, skip implementation.",
@@ -71,7 +70,7 @@ class WorkflowGeneralCaseSpecEvaluator(CoSTEEREvaluator):
         # Clean the scores.csv & submission.csv.
         implementation.execute(env=env, entry=get_clear_ws_cmd())
 
-        stdout = implementation.execute(env=env, entry=f"python -m coverage run main.py")
+        stdout = implementation.execute(env=env, entry="python -m coverage run main.py")
 
         # remove EDA part
         stdout = remove_eda_part(stdout)

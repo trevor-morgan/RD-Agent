@@ -2,7 +2,6 @@ import shutil
 from pathlib import Path
 
 import pandas as pd
-
 from rdagent.components.runner import CachedRunner
 from rdagent.core.exception import CoderError, FactorEmptyError, ModelEmptyError
 from rdagent.core.experiment import ASpecificExp, Experiment
@@ -70,9 +69,8 @@ class KGModelRunner(KGCachedRunner[KGModelExperiment]):
 
             if sub_ws.file_dict == {}:
                 raise ModelEmptyError("No model is implemented.")
-            else:
-                model_file_name = f"model/model_{model_type.lower()}.py"
-                exp.experiment_workspace.inject_files(**{model_file_name: sub_ws.file_dict["model.py"]})
+            model_file_name = f"model/model_{model_type.lower()}.py"
+            exp.experiment_workspace.inject_files(**{model_file_name: sub_ws.file_dict["model.py"]})
         else:
             raise ModelEmptyError("No model is implemented.")
         env_to_use = {"PYTHONPATH": "./"}

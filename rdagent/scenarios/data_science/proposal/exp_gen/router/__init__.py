@@ -57,9 +57,9 @@ class ParallelMultiTraceExpGen(ExpGen):
 
     def gen(
         self,
-        trace: "DSTrace",
-        plan: "ExperimentPlan" | None = None,
-    ) -> "Experiment":
+        trace: DSTrace,
+        plan: ExperimentPlan | None = None,
+    ) -> Experiment:
         raise NotImplementedError(
             "ParallelMultiTraceExpGen is designed for async usage, please call async_gen instead."
         )
@@ -86,18 +86,17 @@ class ParallelMultiTraceExpGen(ExpGen):
 
                     # set the local selection as the global current selection for the trace
                     trace.set_current_selection(local_selection)
+                elif len(leaves) < 2:
+                    local_selection = (-1,)
+                    trace.set_current_selection(selection=local_selection)
                 else:
-                    if len(leaves) < 2:
-                        local_selection = (-1,)
-                        trace.set_current_selection(selection=local_selection)
-                    else:
-                        local_selection = (leaves[0],)
-                        if trace.sota_exp_to_submit is not None:
-                            for i in range(1, len(leaves)):
-                                if trace.is_parent(trace.exp2idx(trace.sota_exp_to_submit), leaves[i]):
-                                    local_selection = (leaves[i],)
-                                    break
-                        trace.set_current_selection(local_selection)
+                    local_selection = (leaves[0],)
+                    if trace.sota_exp_to_submit is not None:
+                        for i in range(1, len(leaves)):
+                            if trace.is_parent(trace.exp2idx(trace.sota_exp_to_submit), leaves[i]):
+                                local_selection = (leaves[i],)
+                                break
+                    trace.set_current_selection(local_selection)
 
                 ds_plan = self.planner.plan(trace) if DS_RD_SETTING.enable_planner else DSExperimentPlan()
 

@@ -11,7 +11,6 @@ if __name__ == "__main__":
     DIRNAME = Path(__file__).absolute().resolve().parent
 
     from rdagent.components.coder.model_coder.benchmark.eval import ModelImpValEval
-    from rdagent.components.coder.model_coder.one_shot import ModelCodeWriter
 
     bench_folder = DIRNAME.parent.parent.parent / "components" / "coder" / "model_coder" / "benchmark"
     mtl = ModelTaskLoaderJson(str(bench_folder / "model_dict.json"))

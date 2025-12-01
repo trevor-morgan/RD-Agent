@@ -7,7 +7,6 @@ import random
 import re
 from itertools import combinations
 from pathlib import Path
-from typing import List, Union
 
 from rdagent.components.coder.CoSTEER.config import CoSTEERSettings
 from rdagent.components.coder.CoSTEER.evaluators import CoSTEERSingleFeedback
@@ -62,12 +61,10 @@ class CoSTEERRAGStrategy(RAGStrategy):
     ) -> EvolvingKnowledgeBase:
         if former_knowledge_base_path is not None and former_knowledge_base_path.exists():
             knowledge_base = pickle.load(open(former_knowledge_base_path, "rb"))
-            if evolving_version == 1 and not isinstance(knowledge_base, CoSTEERKnowledgeBaseV1):
-                raise ValueError("The former knowledge base is not compatible with the current version")
-            elif evolving_version == 2 and not isinstance(
+            if (evolving_version == 1 and not isinstance(knowledge_base, CoSTEERKnowledgeBaseV1)) or (evolving_version == 2 and not isinstance(
                 knowledge_base,
                 CoSTEERKnowledgeBaseV2,
-            ):
+            )):
                 raise ValueError("The former knowledge base is not compatible with the current version")
         else:
             knowledge_base = (
@@ -150,37 +147,36 @@ class CoSTEERRAGStrategyV1(CoSTEERRAGStrategy):
         )
         if len(evolving_trace) == self.current_generated_trace_count:
             return
-        else:
-            for trace_index in range(
-                self.current_generated_trace_count,
-                len(evolving_trace),
-            ):
-                evo_step = evolving_trace[trace_index]
-                implementations = evo_step.evolvable_subjects
-                feedback = evo_step.feedback
-                for task_index in range(len(implementations.sub_tasks)):
-                    target_task = implementations.sub_tasks[task_index]
-                    target_task_information = target_task.get_task_information()
-                    implementation = implementations.sub_workspace_list[task_index]
-                    single_feedback = feedback[task_index]
-                    if single_feedback is None:
-                        continue
-                    single_knowledge = CoSTEERKnowledge(
-                        target_task=target_task,
-                        implementation=implementation,
-                        feedback=single_feedback,
-                    )
-                    if target_task_information not in self.knowledgebase.success_task_info_set:
-                        self.knowledgebase.implementation_trace.setdefault(
-                            target_task_information,
-                            [],
-                        ).append(single_knowledge)
+        for trace_index in range(
+            self.current_generated_trace_count,
+            len(evolving_trace),
+        ):
+            evo_step = evolving_trace[trace_index]
+            implementations = evo_step.evolvable_subjects
+            feedback = evo_step.feedback
+            for task_index in range(len(implementations.sub_tasks)):
+                target_task = implementations.sub_tasks[task_index]
+                target_task_information = target_task.get_task_information()
+                implementation = implementations.sub_workspace_list[task_index]
+                single_feedback = feedback[task_index]
+                if single_feedback is None:
+                    continue
+                single_knowledge = CoSTEERKnowledge(
+                    target_task=target_task,
+                    implementation=implementation,
+                    feedback=single_feedback,
+                )
+                if target_task_information not in self.knowledgebase.success_task_info_set:
+                    self.knowledgebase.implementation_trace.setdefault(
+                        target_task_information,
+                        [],
+                    ).append(single_knowledge)
 
-                        if single_feedback.final_decision == True:
-                            self.knowledgebase.success_task_info_set.add(
-                                target_task_information,
-                            )
-            self.current_generated_trace_count = len(evolving_trace)
+                    if single_feedback.final_decision == True:
+                        self.knowledgebase.success_task_info_set.add(
+                            target_task_information,
+                        )
+        self.current_generated_trace_count = len(evolving_trace)
 
     def query(
         self,
@@ -276,67 +272,66 @@ class CoSTEERRAGStrategyV2(CoSTEERRAGStrategy):
         if len(evolving_trace) == self.current_generated_trace_count:
             return None
 
-        else:
-            for trace_index in range(self.current_generated_trace_count, len(evolving_trace)):
-                evo_step = evolving_trace[trace_index]
-                implementations = evo_step.evolvable_subjects
-                feedback = evo_step.feedback
-                for task_index in range(len(implementations.sub_tasks)):
-                    target_task = implementations.sub_tasks[task_index]
-                    target_task_information = target_task.get_task_information()
-                    implementation = implementations.sub_workspace_list[task_index]
-                    single_feedback: CoSTEERSingleFeedback = feedback[task_index]
-                    if implementation is None or single_feedback is None:
-                        continue
-                    single_knowledge = CoSTEERKnowledge(
-                        target_task=target_task,
-                        implementation=implementation,
-                        feedback=single_feedback,
-                    )
-                    if (
-                        target_task_information not in self.knowledgebase.success_task_to_knowledge_dict
-                        and implementation is not None
-                    ):
-                        if target_task_information not in self.knowledgebase.task_to_component_nodes:
-                            self.knowledgebase.task_to_component_nodes[target_task_information] = (
-                                self.analyze_component(
-                                    target_task_information,
-                                )
+        for trace_index in range(self.current_generated_trace_count, len(evolving_trace)):
+            evo_step = evolving_trace[trace_index]
+            implementations = evo_step.evolvable_subjects
+            feedback = evo_step.feedback
+            for task_index in range(len(implementations.sub_tasks)):
+                target_task = implementations.sub_tasks[task_index]
+                target_task_information = target_task.get_task_information()
+                implementation = implementations.sub_workspace_list[task_index]
+                single_feedback: CoSTEERSingleFeedback = feedback[task_index]
+                if implementation is None or single_feedback is None:
+                    continue
+                single_knowledge = CoSTEERKnowledge(
+                    target_task=target_task,
+                    implementation=implementation,
+                    feedback=single_feedback,
+                )
+                if (
+                    target_task_information not in self.knowledgebase.success_task_to_knowledge_dict
+                    and implementation is not None
+                ):
+                    if target_task_information not in self.knowledgebase.task_to_component_nodes:
+                        self.knowledgebase.task_to_component_nodes[target_task_information] = (
+                            self.analyze_component(
+                                target_task_information,
                             )
-                        self.knowledgebase.working_trace_knowledge.setdefault(target_task_information, []).append(
+                        )
+                    self.knowledgebase.working_trace_knowledge.setdefault(target_task_information, []).append(
+                        single_knowledge,
+                    )  # save to working trace
+                    if single_feedback.final_decision == True:
+                        self.knowledgebase.success_task_to_knowledge_dict.setdefault(
+                            target_task_information,
                             single_knowledge,
-                        )  # save to working trace
-                        if single_feedback.final_decision == True:
-                            self.knowledgebase.success_task_to_knowledge_dict.setdefault(
-                                target_task_information,
-                                single_knowledge,
-                            )
-                            # Do summary for the last step and update the knowledge graph
-                            self.knowledgebase.update_success_task(
-                                target_task_information,
+                        )
+                        # Do summary for the last step and update the knowledge graph
+                        self.knowledgebase.update_success_task(
+                            target_task_information,
+                        )
+                    else:
+                        # generate error node and store into knowledge base
+                        error_analysis_result = []
+                        if single_feedback.return_checking:
+                            error_analysis_result = self.analyze_error(
+                                single_feedback.return_checking,
+                                feedback_type="value",
                             )
                         else:
-                            # generate error node and store into knowledge base
-                            error_analysis_result = []
-                            if single_feedback.return_checking:
-                                error_analysis_result = self.analyze_error(
-                                    single_feedback.return_checking,
-                                    feedback_type="value",
-                                )
-                            else:
-                                error_analysis_result = self.analyze_error(
-                                    single_feedback.execution,
-                                    feedback_type="execution",
-                                )
-                            self.knowledgebase.working_trace_error_analysis.setdefault(
-                                target_task_information,
-                                [],
-                            ).append(
-                                error_analysis_result,
-                            )  # save to working trace error record, for graph update
+                            error_analysis_result = self.analyze_error(
+                                single_feedback.execution,
+                                feedback_type="execution",
+                            )
+                        self.knowledgebase.working_trace_error_analysis.setdefault(
+                            target_task_information,
+                            [],
+                        ).append(
+                            error_analysis_result,
+                        )  # save to working trace error record, for graph update
 
-            self.current_generated_trace_count = len(evolving_trace)
-            return None
+        self.current_generated_trace_count = len(evolving_trace)
+        return None
 
     def query(self, evo: EvolvableSubjects, evolving_trace: list[EvoStep]) -> CoSTEERQueriedKnowledge | None:
         conf_knowledge_sampler = self.settings.v2_knowledge_sampler
@@ -385,7 +380,7 @@ class CoSTEERRAGStrategyV2(CoSTEERRAGStrategy):
                     system_prompt=analyze_component_system_prompt,
                     user_prompt=analyze_component_user_prompt,
                     json_mode=True,
-                    json_target_type=List[int],
+                    json_target_type=list[int],
                 ),
             )["component_no_list"]
             return [all_component_nodes[index - 1] for index in sorted(list(set(component_no_list)))]
@@ -424,18 +419,17 @@ class CoSTEERRAGStrategyV2(CoSTEERRAGStrategy):
         all_error_nodes = self.knowledgebase.graph.get_all_nodes_by_label_list(["error"])
         if not len(all_error_nodes):
             return error_contents
-        else:
-            error_list = []
-            for error_content in error_contents:
-                for error_node in all_error_nodes:
-                    if error_content == error_node.content:
-                        error_list.append(error_node)
-                    else:
-                        error_list.append(error_content)
-                    if error_list[-1] in error_list[:-1]:
-                        error_list.pop()
+        error_list = []
+        for error_content in error_contents:
+            for error_node in all_error_nodes:
+                if error_content == error_node.content:
+                    error_list.append(error_node)
+                else:
+                    error_list.append(error_content)
+                if error_list[-1] in error_list[:-1]:
+                    error_list.pop()
 
-            return error_list
+        return error_list
 
     def former_trace_query(
         self,
@@ -443,7 +437,7 @@ class CoSTEERRAGStrategyV2(CoSTEERRAGStrategy):
         queried_knowledge_v2: CoSTEERQueriedKnowledgeV2,
         v2_query_former_trace_limit: int = 5,
         v2_add_fail_attempt_to_latest_successful_execution: bool = False,
-    ) -> Union[CoSTEERQueriedKnowledge, set]:
+    ) -> CoSTEERQueriedKnowledge | set:
         """
         Query the former trace knowledge of the working trace, and find all the failed task information which tried more than fail_task_trial_limit times
         """
@@ -841,7 +835,7 @@ class CoSTEERKnowledgeBaseV2(EvolvingKnowledgeBase):
 
     def graph_query_by_content(
         self,
-        content: Union[str, list[str]],
+        content: str | list[str],
         topk_k: int = 5,
         step: int = 1,
         constraint_labels: list[str] = None,
