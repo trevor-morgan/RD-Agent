@@ -49,10 +49,19 @@ class QlibModelHypothesisGen(ModelHypothesisGen):
             else "No successful experiments yet."
         )
 
+        # Build hypothesis_and_feedback from trajectory for base class compatibility
+        hypothesis_and_feedback = (
+            T("scenarios.qlib.prompts:hypothesis_and_feedback").r(trace=trace)
+            if len(trace.hist) > 0
+            else "No previous hypothesis and feedback available since it's the first round."
+        )
+
         context_dict = {
             "trajectory_context": trajectory_context,
             "last_experiment_context": last_experiment_context,
             "top_experiments_summary": top_experiments_summary,
+            "hypothesis_and_feedback": hypothesis_and_feedback,  # Required by base class
+            "last_hypothesis_and_feedback": last_experiment_context,  # Reuse for compatibility
             "RAG": "1. In Quantitative Finance, market data could be time-series, and GRU model/LSTM model are suitable for them. Do not generate GNN model as for now.\n2. The training data consists of less than 1 million samples for the training set and approximately 250,000 samples for the validation set. Please design the hyperparameters accordingly and control the model size.",
             "hypothesis_output_format": T("scenarios.qlib.poetiq_prompts:hypothesis_output_format").r(),
             "hypothesis_specification": T("scenarios.qlib.poetiq_prompts:exploration_hypothesis_spec").r(),
