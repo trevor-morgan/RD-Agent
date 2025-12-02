@@ -69,6 +69,141 @@ def cleanup_container(container: docker.models.containers.Container | None, cont
             logger.warning(f"Failed to cleanup{context_str} container {container.id}: {cleanup_error}")
 
 
+def compute_dockerfile_hash(dockerfile_folder: Path) -> str:
+    """Compute a hash of the Dockerfile content for change detection.
+
+    This allows skipping rebuilds when the Dockerfile hasn't changed.
+    """
+    import hashlib
+
+    dockerfile_path = dockerfile_folder / "Dockerfile"
+    if not dockerfile_path.exists():
+        return ""
+
+    hasher = hashlib.md5()
+    hasher.update(dockerfile_path.read_bytes())
+
+    # Also include .dockerignore if present
+    dockerignore_path = dockerfile_folder / ".dockerignore"
+    if dockerignore_path.exists():
+        hasher.update(dockerignore_path.read_bytes())
+
+    return hasher.hexdigest()[:12]  # Short hash for labels
+
+
+def get_image_dockerfile_hash(client: docker.DockerClient, image_name: str) -> str | None:  # type: ignore[no-any-unimported]
+    """Get the Dockerfile hash from an image's labels, if present."""
+    try:
+        image = client.images.get(image_name)
+        return image.labels.get("rdagent.dockerfile.hash")
+    except docker.errors.ImageNotFound:
+        return None
+    except Exception:
+        return None
+
+
+def should_rebuild_image(
+    client: docker.DockerClient,  # type: ignore[no-any-unimported]
+    image_name: str,
+    dockerfile_folder: Path,
+    skip_if_exists: bool = True,
+    smart_rebuild: bool = True,
+) -> tuple[bool, str]:
+    """Determine if an image should be rebuilt.
+
+    Returns:
+        (should_rebuild, reason) tuple
+    """
+    # Check if image exists
+    try:
+        image = client.images.get(image_name)
+        image_exists = True
+    except docker.errors.ImageNotFound:
+        image_exists = False
+        return True, "image not found"
+
+    if not skip_if_exists:
+        return True, "skip_build_if_exists=False"
+
+    if not smart_rebuild:
+        # Image exists and we're not doing smart rebuild checks
+        return False, "image exists, skip_build_if_exists=True"
+
+    # Smart rebuild: check if Dockerfile changed
+    current_hash = compute_dockerfile_hash(dockerfile_folder)
+    stored_hash = image.labels.get("rdagent.dockerfile.hash")
+
+    if stored_hash is None:
+        # No hash stored - image was built before smart caching
+        # Rebuild to add the hash label
+        return True, "no hash label (legacy image)"
+
+    if current_hash != stored_hash:
+        return True, f"Dockerfile changed ({stored_hash} -> {current_hash})"
+
+    return False, f"Dockerfile unchanged (hash={current_hash})"
+
+
+class DockerBuildLock:
+    """File-based lock to prevent concurrent Docker builds of the same image.
+
+    Multiple processes trying to build the same image simultaneously is wasteful
+    and can cause race conditions. This lock ensures only one build happens at a time.
+    """
+
+    def __init__(self, image_name: str, timeout: float = 600):
+        import tempfile
+
+        # Create lock file in temp directory, named after the image
+        safe_name = image_name.replace("/", "_").replace(":", "_")
+        self.lock_path = Path(tempfile.gettempdir()) / f"rdagent_docker_build_{safe_name}.lock"
+        self.timeout = timeout
+        self._lock_file = None
+
+    def __enter__(self):
+        import time
+
+        start_time = time.time()
+        while True:
+            try:
+                # Try to create lock file exclusively
+                self._lock_file = open(self.lock_path, "x")
+                self._lock_file.write(str(os.getpid()))
+                self._lock_file.flush()
+                return self
+            except FileExistsError:
+                # Lock exists - check if stale
+                try:
+                    with open(self.lock_path) as f:
+                        pid = int(f.read().strip())
+                    # Check if process still exists
+                    os.kill(pid, 0)
+                    # Process exists, wait
+                    if time.time() - start_time > self.timeout:
+                        logger.warning(f"Build lock timeout for {self.lock_path}, breaking lock")
+                        self._break_lock()
+                        continue
+                    logger.info(f"Waiting for build lock (held by PID {pid})...")
+                    time.sleep(2)
+                except (ValueError, ProcessLookupError, FileNotFoundError):
+                    # Stale lock - break it
+                    self._break_lock()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._lock_file:
+            self._lock_file.close()
+        try:
+            self.lock_path.unlink()
+        except FileNotFoundError:
+            pass
+
+    def _break_lock(self):
+        try:
+            self.lock_path.unlink()
+        except FileNotFoundError:
+            pass
+
+
 # Normalize all bind paths in volumes to absolute paths using the workspace (working_dir).
 def normalize_volumes(vols: dict[str, str | dict[str, str]], working_dir: str) -> dict:
     abs_vols: dict[str, str | dict[str, str]] = {}
@@ -662,6 +797,10 @@ class DockerConf(EnvConf):
     auto_cleanup_before_build: bool = True  # Clean dangling images before build
     auto_cleanup_after_run: bool = True  # Clean stopped containers after run
 
+    # Smart build caching - avoid unnecessary rebuilds
+    skip_build_if_exists: bool = True  # Skip build if image already exists (major speedup)
+    smart_rebuild: bool = True  # Only rebuild if Dockerfile content changed (hash-based)
+
 
 class QlibCondaConf(CondaConf):
     conda_env_name: str = "rdagent4qlib"
@@ -780,51 +919,86 @@ class DockerEnv(Env[DockerConf]):
 
     def prepare(self, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
         """
-        Download image if it doesn't exist
+        Download image if it doesn't exist, or rebuild if Dockerfile changed.
+
+        Smart caching behavior (controlled by skip_build_if_exists and smart_rebuild):
+        - If image exists and Dockerfile unchanged: skip build (fast path)
+        - If image exists but Dockerfile changed: rebuild
+        - If image doesn't exist: build
         """
         import os
 
         client = docker.from_env()
-
-        # Pre-build cleanup if enabled
-        if self.conf.auto_cleanup_before_build:
-            from rdagent.utils.docker_cleanup import pre_build_cleanup
-
-            pre_build_cleanup()
 
         if (
             self.conf.build_from_dockerfile
             and self.conf.dockerfile_folder_path is not None
             and self.conf.dockerfile_folder_path.exists()
         ):
-            logger.info(f"Building the image from dockerfile: {self.conf.dockerfile_folder_path}")
-
-            # Enable BuildKit for parallel builds and better caching
-            if self.conf.use_buildkit:
-                os.environ["DOCKER_BUILDKIT"] = "1"
-
-            resp_stream = client.api.build(
-                path=str(self.conf.dockerfile_folder_path),
-                tag=self.conf.image,
-                network_mode=self.conf.network,
-                rm=True,  # Remove intermediate containers after build
-                forcerm=True,  # Always remove intermediate containers
+            # Smart rebuild detection - avoid unnecessary builds
+            needs_rebuild, reason = should_rebuild_image(
+                client=client,
+                image_name=self.conf.image,
+                dockerfile_folder=self.conf.dockerfile_folder_path,
+                skip_if_exists=self.conf.skip_build_if_exists,
+                smart_rebuild=self.conf.smart_rebuild,
             )
-            if isinstance(resp_stream, str):
-                logger.info(resp_stream)
-            with Progress(SpinnerColumn(), TextColumn("{task.description}")) as p:
-                task = p.add_task("[cyan]Building image...")
-                for part in resp_stream:
-                    lines = part.decode("utf-8").split("\r\n")
-                    for line in lines:
-                        if line.strip():
-                            status_dict = json.loads(line)
-                            if "error" in status_dict:
-                                p.update(task, description=f"[red]error: {status_dict['error']}")
-                                raise docker.errors.BuildError(status_dict["error"], "")
-                            if "stream" in status_dict:
-                                p.update(task, description=status_dict["stream"])
-            logger.info(f"Finished building the image from dockerfile: {self.conf.dockerfile_folder_path}")
+
+            if not needs_rebuild:
+                logger.info(f"Skipping build for {self.conf.image}: {reason}")
+            else:
+                # Use build lock to prevent concurrent builds of the same image
+                with DockerBuildLock(self.conf.image):
+                    # Double-check after acquiring lock (another process may have built)
+                    needs_rebuild, reason = should_rebuild_image(
+                        client=client,
+                        image_name=self.conf.image,
+                        dockerfile_folder=self.conf.dockerfile_folder_path,
+                        skip_if_exists=self.conf.skip_build_if_exists,
+                        smart_rebuild=self.conf.smart_rebuild,
+                    )
+
+                    if not needs_rebuild:
+                        logger.info(f"Build completed by another process: {reason}")
+                    else:
+                        logger.info(f"Building {self.conf.image}: {reason}")
+
+                        # Pre-build cleanup if enabled
+                        if self.conf.auto_cleanup_before_build:
+                            from rdagent.utils.docker_cleanup import pre_build_cleanup
+
+                            pre_build_cleanup()
+
+                        # Enable BuildKit for parallel builds and better caching
+                        if self.conf.use_buildkit:
+                            os.environ["DOCKER_BUILDKIT"] = "1"
+
+                        # Compute Dockerfile hash for smart caching
+                        dockerfile_hash = compute_dockerfile_hash(self.conf.dockerfile_folder_path)
+
+                        resp_stream = client.api.build(
+                            path=str(self.conf.dockerfile_folder_path),
+                            tag=self.conf.image,
+                            network_mode=self.conf.network,
+                            rm=True,  # Remove intermediate containers after build
+                            forcerm=True,  # Always remove intermediate containers
+                            labels={"rdagent.dockerfile.hash": dockerfile_hash},  # Store hash for smart rebuild
+                        )
+                        if isinstance(resp_stream, str):
+                            logger.info(resp_stream)
+                        with Progress(SpinnerColumn(), TextColumn("{task.description}")) as p:
+                            task = p.add_task("[cyan]Building image...")
+                            for part in resp_stream:
+                                lines = part.decode("utf-8").split("\r\n")
+                                for line in lines:
+                                    if line.strip():
+                                        status_dict = json.loads(line)
+                                        if "error" in status_dict:
+                                            p.update(task, description=f"[red]error: {status_dict['error']}")
+                                            raise docker.errors.BuildError(status_dict["error"], "")
+                                        if "stream" in status_dict:
+                                            p.update(task, description=status_dict["stream"])
+                        logger.info(f"Finished building {self.conf.image} (hash={dockerfile_hash})")
         try:
             client.images.get(self.conf.image)
         except docker.errors.ImageNotFound:

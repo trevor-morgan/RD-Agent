@@ -100,24 +100,34 @@ POETIQ_CONSENSUS_ENABLED=false         # Cluster voting
 
 ### Docker Workflow Improvements - COMPLETED ✅
 
-Implemented auto-cleanup and build caching for Docker workflow.
+Implemented auto-cleanup, build caching, and smart rebuild detection for Docker workflow.
+
+**Problem Solved:** Before these changes, `prepare()` triggered a full Docker rebuild on EVERY workspace execution - 4+ rebuilds per 23 minutes, creating 170GB+ of dangling images.
 
 **Features:**
-1. **BuildKit enabled** - Parallel layer builds, better caching
-2. **Auto-cleanup ON by default** - Pre-build (dangling images) + post-run (stopped containers)
-3. **Consolidated Dockerfiles** - 17 RUN commands → 1 for better layer caching
-4. **.dockerignore files** - Reduce build context 50-80%
-5. **CLI cleanup command** - `rdagent cleanup` for manual cleanup
+1. **Smart rebuild detection** - Skip build if image exists and Dockerfile unchanged (hash-based)
+2. **Build lock** - Prevent concurrent builds from multiple processes
+3. **BuildKit enabled** - Parallel layer builds, better caching
+4. **Auto-cleanup ON by default** - Pre-build (dangling images) + post-run (stopped containers)
+5. **Consolidated Dockerfiles** - 17 RUN commands → 1 for better layer caching
+6. **.dockerignore files** - Reduce build context 50-80%
+7. **CLI cleanup command** - `rdagent cleanup` for manual cleanup
 
 **New Files:**
 - `rdagent/utils/docker_cleanup.py` - `DockerCleanupManager`, `pre_build_cleanup()`, `post_run_cleanup()`
 - `rdagent/app/utils/docker_cleanup_cli.py` - CLI subcommand
 - 4 `.dockerignore` files in docker directories
 
+**Key Functions in `rdagent/utils/env.py`:**
+- `compute_dockerfile_hash()` - Hash Dockerfile for change detection
+- `should_rebuild_image()` - Decide if rebuild needed (checks hash label)
+- `DockerBuildLock` - File-based lock to prevent concurrent builds
+- Image labels: `rdagent.dockerfile.hash` stores hash for smart caching
+
 **Modified Files:**
-- `rdagent/utils/env.py:660-663` - Added `use_buildkit`, `auto_cleanup_before_build`, `auto_cleanup_after_run` to `DockerConf`
-- `rdagent/utils/env.py:781-812` - BuildKit + pre-build cleanup in `DockerEnv.prepare()`
-- `rdagent/utils/env.py:973-979` - Post-run cleanup in `DockerEnv._run()`
+- `rdagent/utils/env.py:72-204` - New helper functions and DockerBuildLock class
+- `rdagent/utils/env.py:665-667` - Added `skip_build_if_exists`, `smart_rebuild` to `DockerConf`
+- `rdagent/utils/env.py:938-1001` - Smart rebuild + build lock in `DockerEnv.prepare()`
 - `rdagent/app/cli.py` - Added `cleanup` subcommand
 - 3 Dockerfiles - Consolidated RUN commands
 
@@ -135,7 +145,16 @@ rdagent cleanup all --dry-run    # Preview without cleaning
 DOCKER_USE_BUILDKIT=false
 DOCKER_AUTO_CLEANUP_BEFORE_BUILD=false
 DOCKER_AUTO_CLEANUP_AFTER_RUN=false
+DOCKER_SKIP_BUILD_IF_EXISTS=false    # Force rebuild even if image exists
+DOCKER_SMART_REBUILD=false           # Disable hash-based change detection
 ```
+
+**Expected Impact:**
+| Metric | Before | After |
+|--------|--------|-------|
+| Builds per run | 4+ (every prepare()) | 1 (only when Dockerfile changes) |
+| Dangling images | ~170GB accumulated | Auto-cleaned |
+| Build time (cache hit) | Full rebuild | <1 second (skip) |
 
 ### Monorepo Lab Integration (qlib-quant-lab folded in) - IN PROGRESS
 
