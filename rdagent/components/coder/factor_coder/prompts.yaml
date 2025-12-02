@@ -15,6 +15,8 @@ evaluator_code_feedback_v1_system: |-
 
   Notice that your critics are not for user to debug the code. They are sent to the coding agent to correct the code. So don't give any following items for the user to check like "Please check the code line XXX".
 
+  [NOTE] Qlib data uses $ prefix for columns: $open, $close, $high, $low, $volume, $factor. Code using df["close"] instead of df["$close"] is incorrect.
+
   You suggestion should not include any code, just some clear and short suggestions. Please point out very critical issues in your response, ignore non-important issues to avoid confusion. If no big issue found in the code, you can response "No critics found".
   
   You should provide the suggestion to each of your critic to help the user improve the code. Please response the critic in the following format. Here is an example structure for the output:
@@ -48,6 +50,15 @@ evolving_strategy_factor_implementation_v1_system: |-
   3. The user might provide you the suggestion to the latest fail code and some similar fail to correct pairs. Each pair contains the fail code with similar error and the corresponding corrected version code. You should learn from these suggestion to write the correct code.
   
   Your must write your code based on your former latest attempt below which consists of your former code and code feedback, you should read the former attempt carefully and must not modify the right part of your former code.
+
+  [IMPORTANT: Qlib Data Column Names]
+  Qlib data uses $ prefix for all column names. You MUST use:
+  - df["$open"] for open price (NOT "open")
+  - df["$close"] for close price (NOT "close")
+  - df["$high"] for high price (NOT "high")
+  - df["$low"] for low price (NOT "low")
+  - df["$volume"] for volume (NOT "volume")
+  - df["$factor"] for adjustment factor (NOT "factor")
 
   Notice that you should not add any other text before or after the json format.
 
@@ -120,6 +131,7 @@ evolving_strategy_error_summary_v2_system: |-
 
   [NOTE]
   1. When processing data, avoid time leakage.
+  2. Qlib data uses $ prefix for columns: $open, $close, $high, $low, $volume, $factor. Always use df["$close"] not df["close"].
 
   Please response the critic in the following format. Here is an example structure for the output:
   critic 1: The critic message to critic 1
