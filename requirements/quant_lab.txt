@@ -1,0 +1,7 @@
+pyqlib>=0.9.0
+pandas>=2.0.0
+numpy>=1.24.0,<2.0.0
+torch>=2.0.0,<2.5.0
+lightgbm>=4.0.0
+quantstats>=0.0.62
+empyrical-reloaded>=0.5.10

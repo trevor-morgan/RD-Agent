@@ -17,6 +17,7 @@ import subprocess
 from importlib.resources import path as rpath
 
 import typer
+from rdagent_lab.cli import app as lab_app
 from rdagent.app.data_science.loop import main as data_science
 from rdagent.app.general_model.general_model import (
     extract_models_and_implement as general_model,
@@ -72,6 +73,7 @@ app.command(name="fin_model")(fin_model)
 app.command(name="fin_quant")(fin_quant)
 app.command(name="fin_factor_report")(fin_factor_report)
 app.command(name="general_model")(general_model)
+app.add_typer(lab_app, name="lab", help="RD-Agent Lab commands (Qlib workflows, backtests, research)")
 app.command(name="data_science")(data_science)
 app.command(name="grade_summary")(grade_summary)
 app.command(name="ui")(ui)

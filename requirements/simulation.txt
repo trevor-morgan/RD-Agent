@@ -1,0 +1,3 @@
+abides-core @ git+https://github.com/jpmorganchase/abides-jpmc-public.git#subdirectory=abides-core
+abides-markets @ git+https://github.com/jpmorganchase/abides-jpmc-public.git#subdirectory=abides-markets
+abides-gym @ git+https://github.com/jpmorganchase/abides-jpmc-public.git#subdirectory=abides-gym

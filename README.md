@@ -161,6 +161,14 @@ Ensure the current user can run Docker commands **without using sudo**. You can 
 
 More details can be found in the [development setup](https://rdagent.readthedocs.io/en/latest/development.html).
 
+### 🧪 Lab CLI (experimental monorepo)
+- The repository now includes an integrated "lab" CLI (formerly qlib-quant-lab) for Qlib-based training/backtesting and RD-Agent quant runs.
+- Install with extras (adjust as needed): `uv pip install -e .[quant-lab,backtest,rl,llm]`
+- Try it:
+  - `rdagent lab train model --model lgbm --features Alpha158`
+  - `rdagent lab backtest vectorbt <preds> <prices>`
+  - `rdagent lab research quant --iterations 1`
+
 ### 💊 Health check
 - rdagent provides a health check that currently checks two things.
   - whether the docker installation was successful.

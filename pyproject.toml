@@ -13,8 +13,8 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
 ]
 description = "Research & Development Agent"
 dynamic = [
@@ -29,10 +29,11 @@ keywords = [
 ]
 name = "rdagent"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 [project.scripts]
 rdagent = "rdagent.app.cli:app"
+rdagent-lab = "rdagent_lab.cli:app"
 
 [project.urls]
 homepage = "https://github.com/microsoft/RD-Agent/"
@@ -44,6 +45,7 @@ fail_under = 80
 [tool.coverage.run]
 source = [
   "rdagent",
+  "rdagent_lab",
 ]
 
 [tool.isort]
@@ -76,7 +78,7 @@ minversion = "6.0"
 [tool.ruff]
 fix = true
 line-length = 120
-src = ["rdagent"]
+src = ["rdagent", "rdagent_lab"]
 
 [tool.ruff.lint]
 ignore = [
@@ -109,7 +111,7 @@ select = ["ALL"]
 exclude = ["test/scripts", "test/notebook/testfiles", "git_ignore_folder"]
 
 [tool.setuptools]
-packages = ["rdagent"]
+packages = ["rdagent", "rdagent_lab"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
@@ -120,6 +122,13 @@ lint = {file = ["requirements/lint.txt"]}
 package = {file = ["requirements/package.txt"]}
 test = {file = ["requirements/test.txt"]}
 torch = {file = ["requirements/torch.txt"]} # some agent algorithms need torch.  pip install rdagent[torch]
+quant-lab = {file = ["requirements/quant_lab.txt"]}
+backtest = {file = ["requirements/backtest.txt"]}
+rl = {file = ["requirements/rl.txt"]}
+llm = {file = ["requirements/llm.txt"]}
+live = {file = ["requirements/live.txt"]}
+simulation = {file = ["requirements/simulation.txt"]}
+api = {file = ["requirements/api.txt"]}
 
 [tool.setuptools_scm]
 local_scheme = "no-local-version"

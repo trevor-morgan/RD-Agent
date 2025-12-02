@@ -98,6 +98,30 @@ POETIQ_CONSENSUS_ENABLED=false         # Cluster voting
 
 **Tests:** 35 tests in `test/poetiq/`
 
+### Monorepo Lab Integration (qlib-quant-lab folded in) - IN PROGRESS
+
+**Goal:** Consolidate the Qlib orchestration/lab tools into RD-Agent as a first-class module managed via uv extras.
+
+**What was added:**
+- New package `rdagent_lab/` (CLI, services, research adapter, models, analytics, experimental templates).
+  - CLI: `rdagent lab ...` (and `rdagent-lab` script) with subcommands for train/backtest/research/live.
+  - Services: Qlib-backed training (`services/training.py`) and Qlib/VectorBT backtests (`services/backtest.py`).
+  - Research adapter: `research/rdagent_adapter.py` calls `rdagent.app.qlib_rd_loop.quant` directly (no subprocess parsing).
+  - Experimental templates: `research/{symplectic_templates,scenario_generator}.py`.
+  - Model registry wrappers: LightGBM/Transformer in `models/traditional` and `models/deep`.
+- Main CLI wired to include `lab` Typer subcommand.
+- Packaging/tooling updated to include `rdagent_lab`; new optional dependency bundles in `requirements/` for `quant_lab`, `backtest`, `rl`, `llm`, `live`, `simulation`, `api`.
+- README documents the experimental Lab CLI and install/run examples.
+
+**How to use (dev):**
+- Install extras: `uv pip install -e .[quant-lab,backtest,rl,llm]` (add `simulation`/`api`/`live` as needed).
+- Run: `rdagent lab train model --model lgbm --features Alpha158`, `rdagent lab backtest vectorbt <preds> <prices>`, `rdagent lab research quant --iterations 1`.
+
+**Open items:**
+- Migrate remaining configs/templates/docs from the old qlib-quant-lab repo into `configs/` and docs.
+- Replace any remaining subprocess-based RD-Agent invocations with the adapter pattern.
+- Add smoke tests for the lab CLI (typer missing in base env; extras required).
+
 ### Multi-Provider Subscription Proxy Support - VERIFIED WORKING ✅
 
 Added support for using subscription-based AI services (Claude Max, ChatGPT Pro, Gemini) via CLIProxyAPI.
@@ -181,3 +205,8 @@ t = FactorTask('test', 'test', 'test', version=2)
 | `rdagent/scenarios/qlib/developer/feedback.py` | Scored feedback generation + resilient metric handling |
 | `rdagent/scenarios/qlib/poetiq_prompts.yaml` | **NEW** - Exploration-focused prompts (safe result rendering) |
 | `test/poetiq/*` | **NEW** - 36 unit tests for Poetiq components |
+| `rdagent/app/cli.py` | Added `lab` Typer subcommand for integrated lab CLI |
+| `rdagent_lab/**` | **NEW** - Lab package (CLI, services, adapter, models, analytics, templates) |
+| `requirements/{quant_lab,backtest,rl,llm,live,simulation,api}.txt` | **NEW** optional dependency bundles |
+| `pyproject.toml` | Included `rdagent_lab` in packaging/tooling; registered `rdagent-lab` script and extras |
+| `README.md` | Documented experimental lab CLI and install examples |
