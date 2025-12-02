@@ -657,6 +657,11 @@ class DockerConf(EnvConf):
     retry_count: int = 5  # retry count for the docker run
     retry_wait_seconds: int = 10  # retry wait seconds for the docker run
 
+    # BuildKit and auto-cleanup configuration (all default ON)
+    use_buildkit: bool = True  # Enable BuildKit for parallel builds
+    auto_cleanup_before_build: bool = True  # Clean dangling images before build
+    auto_cleanup_after_run: bool = True  # Clean stopped containers after run
+
 
 class QlibCondaConf(CondaConf):
     conda_env_name: str = "rdagent4qlib"
@@ -777,15 +782,33 @@ class DockerEnv(Env[DockerConf]):
         """
         Download image if it doesn't exist
         """
+        import os
+
         client = docker.from_env()
+
+        # Pre-build cleanup if enabled
+        if self.conf.auto_cleanup_before_build:
+            from rdagent.utils.docker_cleanup import pre_build_cleanup
+
+            pre_build_cleanup()
+
         if (
             self.conf.build_from_dockerfile
             and self.conf.dockerfile_folder_path is not None
             and self.conf.dockerfile_folder_path.exists()
         ):
             logger.info(f"Building the image from dockerfile: {self.conf.dockerfile_folder_path}")
+
+            # Enable BuildKit for parallel builds and better caching
+            if self.conf.use_buildkit:
+                os.environ["DOCKER_BUILDKIT"] = "1"
+
             resp_stream = client.api.build(
-                path=str(self.conf.dockerfile_folder_path), tag=self.conf.image, network_mode=self.conf.network
+                path=str(self.conf.dockerfile_folder_path),
+                tag=self.conf.image,
+                network_mode=self.conf.network,
+                rm=True,  # Remove intermediate containers after build
+                forcerm=True,  # Always remove intermediate containers
             )
             if isinstance(resp_stream, str):
                 logger.info(resp_stream)
@@ -949,6 +972,11 @@ class DockerEnv(Env[DockerConf]):
             raise RuntimeError(f"Error while running the container: {e}")
         finally:
             cleanup_container(container)
+            # Post-run cleanup if enabled
+            if self.conf.auto_cleanup_after_run:
+                from rdagent.utils.docker_cleanup import post_run_cleanup
+
+                post_run_cleanup()
 
 
 class QTDockerEnv(DockerEnv):

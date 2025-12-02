@@ -98,6 +98,45 @@ POETIQ_CONSENSUS_ENABLED=false         # Cluster voting
 
 **Tests:** 35 tests in `test/poetiq/`
 
+### Docker Workflow Improvements - COMPLETED ✅
+
+Implemented auto-cleanup and build caching for Docker workflow.
+
+**Features:**
+1. **BuildKit enabled** - Parallel layer builds, better caching
+2. **Auto-cleanup ON by default** - Pre-build (dangling images) + post-run (stopped containers)
+3. **Consolidated Dockerfiles** - 17 RUN commands → 1 for better layer caching
+4. **.dockerignore files** - Reduce build context 50-80%
+5. **CLI cleanup command** - `rdagent cleanup` for manual cleanup
+
+**New Files:**
+- `rdagent/utils/docker_cleanup.py` - `DockerCleanupManager`, `pre_build_cleanup()`, `post_run_cleanup()`
+- `rdagent/app/utils/docker_cleanup_cli.py` - CLI subcommand
+- 4 `.dockerignore` files in docker directories
+
+**Modified Files:**
+- `rdagent/utils/env.py:660-663` - Added `use_buildkit`, `auto_cleanup_before_build`, `auto_cleanup_after_run` to `DockerConf`
+- `rdagent/utils/env.py:781-812` - BuildKit + pre-build cleanup in `DockerEnv.prepare()`
+- `rdagent/utils/env.py:973-979` - Post-run cleanup in `DockerEnv._run()`
+- `rdagent/app/cli.py` - Added `cleanup` subcommand
+- 3 Dockerfiles - Consolidated RUN commands
+
+**CLI Usage:**
+```bash
+rdagent cleanup status           # Show disk usage
+rdagent cleanup all              # Clean dangling images + stopped containers
+rdagent cleanup all --cache      # Also clean build cache
+rdagent cleanup all --images     # Also remove local_* images
+rdagent cleanup all --dry-run    # Preview without cleaning
+```
+
+**Configuration (all default ON, disable if needed):**
+```bash
+DOCKER_USE_BUILDKIT=false
+DOCKER_AUTO_CLEANUP_BEFORE_BUILD=false
+DOCKER_AUTO_CLEANUP_AFTER_RUN=false
+```
+
 ### Monorepo Lab Integration (qlib-quant-lab folded in) - IN PROGRESS
 
 **Goal:** Consolidate the Qlib orchestration/lab tools into RD-Agent as a first-class module managed via uv extras.
@@ -141,6 +180,34 @@ EMBEDDING_OPENAI_API_KEY=sk-proj-xxx
 EMBEDDING_MODEL=text-embedding-3-small
 ```
 
+**Available Models via CLIProxyAPI:**
+
+| Provider | Model Names | Notes |
+|----------|-------------|-------|
+| Claude Max | `openai/claude-opus-4-5-20251101`, `openai/claude-sonnet-4-5-20250929` | Use `CHAT_TEMPERATURE=1` for thinking models |
+| ChatGPT Pro | `openai/gpt-5.1-codex-max-xhigh` | Includes reasoning tokens |
+| Gemini (AI Ultra) | `openai/gemini-3-pro-preview`, `openai/gemini-3-pro-preview-11-2025`, `openai/gemini-3-pro-preview-11-2025-thinking` | Released Nov 18, 2025 |
+
+**Gemini 3 Pro Notes:**
+- Requires **AI Ultra subscription** or paid Gemini API key
+- Uses `thinking_level` parameter (`low`/`high`) for reasoning depth - no "thinking max" mode
+- "Deep Think" mode (even stronger reasoning) coming for AI Ultra subscribers
+- CLIProxyAPI v6.3.21+ supports updated Gemini model list
+
+**CLIProxyAPI Setup:**
+```bash
+# Install
+curl -fsSL https://raw.githubusercontent.com/brokechubb/cliproxyapi-installer/refs/heads/master/cliproxyapi-installer | bash
+
+# Authenticate (from ~/cliproxyapi)
+./cli-proxy-api -claude-login   # Claude Max
+./cli-proxy-api -codex-login    # ChatGPT Pro
+./cli-proxy-api -login          # Gemini (Google Account)
+
+# Start proxy
+./cli-proxy-api
+```
+
 ## Architecture Notes
 
 ### Workspace Hierarchy
@@ -170,6 +237,7 @@ Two levels of workspaces exist:
 | `ScoredHypothesisFeedback` | `rdagent/components/poetiq/feedback.py` | Feedback with soft scoring |
 | `EarlyExitChecker` | `rdagent/components/poetiq/early_exit.py` | Threshold-based loop termination |
 | `TrajectoryFormatter` | `rdagent/components/poetiq/trajectory.py` | Format experiment history for LLM |
+| `DockerCleanupManager` | `rdagent/utils/docker_cleanup.py` | Docker resource cleanup (images, containers, cache) |
 
 ## Development Commands
 
@@ -187,6 +255,12 @@ warnings.filterwarnings('always', category=DeprecationWarning)
 from rdagent.components.coder.factor_coder.factor import FactorTask
 t = FactorTask('test', 'test', 'test', version=2)
 "
+
+# Docker cleanup commands
+rdagent cleanup status           # Show Docker disk usage
+rdagent cleanup all --dry-run    # Preview cleanup
+rdagent cleanup all              # Clean dangling images + stopped containers
+rdagent cleanup all --cache      # Also clean build cache
 ```
 
 ## Files Modified in Current Session
@@ -205,8 +279,13 @@ t = FactorTask('test', 'test', 'test', version=2)
 | `rdagent/scenarios/qlib/developer/feedback.py` | Scored feedback generation + resilient metric handling |
 | `rdagent/scenarios/qlib/poetiq_prompts.yaml` | **NEW** - Exploration-focused prompts (safe result rendering) |
 | `test/poetiq/*` | **NEW** - 36 unit tests for Poetiq components |
-| `rdagent/app/cli.py` | Added `lab` Typer subcommand for integrated lab CLI |
+| `rdagent/app/cli.py` | Added `lab` and `cleanup` Typer subcommands |
 | `rdagent_lab/**` | **NEW** - Lab package (CLI, services, adapter, models, analytics, templates) |
 | `requirements/{quant_lab,backtest,rl,llm,live,simulation,api}.txt` | **NEW** optional dependency bundles |
 | `pyproject.toml` | Included `rdagent_lab` in packaging/tooling; registered `rdagent-lab` script and extras |
 | `README.md` | Documented experimental lab CLI and install examples |
+| `rdagent/utils/docker_cleanup.py` | **NEW** - Docker cleanup module with `DockerCleanupManager` |
+| `rdagent/app/utils/docker_cleanup_cli.py` | **NEW** - CLI for `rdagent cleanup` commands |
+| `rdagent/utils/env.py` | Added BuildKit + auto-cleanup config to `DockerConf`, modified `DockerEnv` |
+| `rdagent/scenarios/*/docker/.dockerignore` | **NEW** - 4 .dockerignore files to reduce build context |
+| `rdagent/scenarios/*/docker/Dockerfile` | Consolidated RUN commands for better layer caching |

@@ -1,0 +1,53 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.env
+.venv/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.github/
+.gitignore
+
+# Logs and data
+*.log
+log/
+logs/
+*.pkl
+*.pickle
+
+# Cache
+.cache/
+pickle_cache/
+git_ignore_folder/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Testing
+.coverage
+htmlcov/
+.tox/
+
+# Documentation
+docs/
+*.md
+!README.md
