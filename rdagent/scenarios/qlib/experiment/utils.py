@@ -1,24 +1,73 @@
+import os
 import random
 import re
 import shutil
+import subprocess
 from pathlib import Path
 
 import pandas as pd
 from jinja2 import Environment, StrictUndefined
 from rdagent.components.coder.factor_coder.config import FACTOR_COSTEER_SETTINGS
-from rdagent.utils.env import QTDockerEnv
+from rdagent.log import rdagent_logger as logger
 
 
-def generate_data_folder_from_qlib():
-    template_path = Path(__file__).parent / "factor_data_template"
+def _is_docker_available() -> bool:
+    """Check if Docker daemon is available."""
+    try:
+        import docker
+
+        client = docker.from_env()
+        client.ping()
+        return True
+    except Exception:
+        return False
+
+
+def _generate_with_uv(template_path: Path) -> str:
+    """Generate data folder using uv (direct execution without Docker)."""
+    logger.info("Using uv backend for data generation (Docker not available)")
+
+    # Run generate.py directly using the current Python environment
+    result = subprocess.run(
+        ["python", "generate.py"],
+        check=False, cwd=str(template_path),
+        capture_output=True,
+        text=True,
+        env={**os.environ},  # Pass through environment including QLIB_DATA_REGION
+    )
+
+    output = result.stdout + result.stderr
+    if result.returncode != 0:
+        logger.error(f"Data generation failed: {output}")
+    return output
+
+
+def _generate_with_docker(template_path: Path) -> str:
+    """Generate data folder using Docker."""
+    from rdagent.utils.env import QTDockerEnv
+
+    logger.info("Using Docker backend for data generation")
+
     qtde = QTDockerEnv()
     qtde.prepare()
 
     # Run the Qlib backtest
-    execute_log = qtde.check_output(
+    return qtde.check_output(
         local_path=str(template_path),
         entry="python generate.py",
     )
+
+
+def generate_data_folder_from_qlib():
+    template_path = Path(__file__).parent / "factor_data_template"
+
+    # Check environment preference or Docker availability
+    env_type = os.environ.get("FACTOR_CoSTEER_env_type", os.environ.get("MODEL_CoSTEER_env_type", "")).lower()
+
+    if env_type == "uv" or not _is_docker_available():
+        execute_log = _generate_with_uv(template_path)
+    else:
+        execute_log = _generate_with_docker(template_path)
 
     assert (Path(__file__).parent / "factor_data_template" / "daily_pv_all.h5").exists(), (
         "daily_pv_all.h5 is not generated. It means rdagent/scenarios/qlib/experiment/factor_data_template/generate.py is not executed correctly. Please check the log: \n"
