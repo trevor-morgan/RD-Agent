@@ -1,5 +1,6 @@
 from typing import Literal
 
+from pydantic import ConfigDict
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.coder.CoSTEER.config import CoSTEERSettings
 from rdagent.utils.env import (
@@ -16,10 +17,9 @@ from rdagent.utils.env import (
 
 
 class DSCoderCoSTEERSettings(CoSTEERSettings):
-    """Data Science CoSTEER settings"""
+    """Data Science CoSTEER settings."""
 
-    class Config:
-        env_prefix = "DS_Coder_CoSTEER_"
+    model_config = ConfigDict(env_prefix="DS_Coder_CoSTEER_")
 
     max_seconds_multiplier: int = 4
     env_type: str = "docker"

@@ -1,6 +1,7 @@
 from typing import Literal
 
 import pandas as pd
+from pydantic import ConfigDict
 from rdagent.app.data_science.conf import DS_RD_SETTING
 from rdagent.components.coder.CoSTEER import CoSTEER
 from rdagent.components.coder.CoSTEER.config import CoSTEERSettings
@@ -26,10 +27,9 @@ from rdagent.utils.workflow import wait_retry
 
 
 class DSRunnerCoSTEERSettings(CoSTEERSettings):
-    """Data Science CoSTEER settings"""
+    """Data Science CoSTEER settings."""
 
-    class Config:
-        env_prefix = "DS_Runner_CoSTEER_"
+    model_config = ConfigDict(env_prefix="DS_Runner_CoSTEER_")
 
     max_seconds_multiplier: int = 1
     env_type: str = "docker"  # or "conda" or "uv"

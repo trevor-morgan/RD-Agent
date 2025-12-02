@@ -161,13 +161,82 @@ Ensure the current user can run Docker commands **without using sudo**. You can 
 
 More details can be found in the [development setup](https://rdagent.readthedocs.io/en/latest/development.html).
 
-### 🧪 Lab CLI (experimental monorepo)
-- The repository now includes an integrated "lab" CLI (formerly qlib-quant-lab) for Qlib-based training/backtesting and RD-Agent quant runs.
-- Install with extras (adjust as needed): `uv pip install -e .[quant-lab,backtest,rl,llm]`
-- Try it:
-  - `rdagent lab train model --model lgbm --features Alpha158`
-  - `rdagent lab backtest vectorbt <preds> <prices>`
-  - `rdagent lab research quant --iterations 1`
+### 🧪 Lab CLI (Qlib Workflows & Backtesting)
+
+The repository includes an integrated **lab CLI** for Qlib-based model training, backtesting, and RD-Agent research workflows.
+
+#### Installation
+
+```bash
+# Core lab functionality (Qlib + LightGBM + analytics)
+pip install rdagent[quant-lab]
+
+# Add VectorBT backtesting
+pip install rdagent[quant-lab,backtest]
+
+# Full installation with all extras
+pip install rdagent[quant-lab,backtest,rl,llm]
+```
+
+#### Available Commands
+
+| Command | Description | Required Extra |
+|---------|-------------|----------------|
+| `rdagent lab train model` | Train ML models using Qlib | `quant-lab` |
+| `rdagent lab train workflow` | Run full Qlib workflow from YAML | `quant-lab` |
+| `rdagent lab backtest qlib` | Backtest with Qlib simulator | `quant-lab` |
+| `rdagent lab backtest vectorbt` | Fast vectorized backtest | `backtest` |
+| `rdagent lab research quant` | Run RD-Agent quant loop | `quant-lab` |
+| `rdagent lab live status` | Live trading status (stub) | `live` |
+
+#### Quick Examples
+
+```bash
+# Train a LightGBM model with Alpha158 features on CSI300
+rdagent lab train model --model lgbm --features Alpha158 --instruments csi300
+
+# Train a Transformer model
+rdagent lab train model --model transformer --features Alpha360
+
+# Run VectorBT backtest on predictions
+rdagent lab backtest vectorbt predictions.pkl prices.csv --topk 30 --report report.html
+
+# Run RD-Agent quant research loop (5 iterations)
+rdagent lab research quant --iterations 5 --output-dir ./output
+```
+
+#### Prerequisites
+
+The lab CLI requires Qlib data to be available:
+
+```bash
+# Download Chinese market data
+python -m qlib.run.get_data qlib_data --target_dir ~/.qlib/qlib_data/cn_data --region cn
+
+# Or US market data
+python -m qlib.run.get_data qlib_data --target_dir ~/.qlib/qlib_data/us_data --region us
+```
+
+#### Supported Models
+
+| Model | Type | Key Parameters |
+|-------|------|----------------|
+| `lgbm` | LightGBM | `n_estimators`, `learning_rate`, `num_leaves` |
+| `transformer` | Deep Learning | `d_model`, `n_heads`, `n_layers` |
+
+#### Configuration
+
+Environment variables for lab services:
+
+```bash
+# Qlib data location
+QLIB_PROVIDER_URI=~/.qlib/qlib_data/cn_data
+QLIB_REGION=cn  # or "us"
+
+# Training defaults
+LAB_DEFAULT_INSTRUMENTS=csi300
+LAB_DEFAULT_FEATURES=Alpha158
+```
 
 ### 💊 Health check
 - rdagent provides a health check that currently checks two things.

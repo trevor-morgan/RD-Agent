@@ -1,8 +1,50 @@
 """Market Scenario Generator using diffusion models (experimental).
 
-This is carried over from qlib-quant-lab to keep the research tooling in-tree.
-It is intentionally self-contained; dependencies are behind the `quant-lab` and
-`rl` extras.
+**EXPERIMENTAL MODULE** - This module contains research-stage implementations
+that are not yet production-ready. APIs may change without notice.
+
+This module implements a Denoising Diffusion Probabilistic Model (DDPM) for
+generating synthetic financial time series. Use cases include:
+
+- Augmenting training data for ML models
+- Stress testing strategies under synthetic market conditions
+- Generating counterfactual scenarios for what-if analysis
+
+Architecture
+------------
+- **TimeSeriesUNet**: U-Net architecture adapted for 1D time series
+- **DiffusionScheduler**: Linear or cosine noise schedule for the diffusion process
+- **DiffusionModel**: Complete DDPM with forward (noising) and reverse (denoising) process
+
+Example Usage
+-------------
+```python
+import torch
+from rdagent_lab.research.scenario_generator import DiffusionModel
+
+# Create model for 4-channel time series (e.g., OHLC)
+model = DiffusionModel(in_channels=4, model_dim=64, num_timesteps=100)
+
+# Training: predict noise from noisy samples
+x0 = torch.randn(8, 4, 64)  # (batch, channels, time)
+t = torch.randint(0, 100, (8,))
+noise = torch.randn_like(x0)
+pred_noise = model(x0, t, noise)
+loss = ((pred_noise - noise) ** 2).mean()
+
+# Generation: sample new time series
+samples = model.sample(shape=(4, 4, 64), device="cpu")  # 4 samples
+```
+
+Note
+----
+This module requires `torch` which is included in the `quant-lab` extra.
+For GPU training, ensure CUDA is properly configured.
+
+References
+----------
+- Ho, J. et al. (2020). Denoising Diffusion Probabilistic Models. NeurIPS.
+- Nichol, A. & Dhariwal, P. (2021). Improved Denoising Diffusion. ICML.
 """
 
 from __future__ import annotations

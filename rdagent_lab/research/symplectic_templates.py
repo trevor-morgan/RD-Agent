@@ -1,4 +1,51 @@
-"""Symplectic and rough-volatility inspired templates for RD-Agent evolution."""
+"""Symplectic and rough-volatility inspired templates for RD-Agent evolution.
+
+**EXPERIMENTAL MODULE** - This module contains research-stage implementations
+that are not yet production-ready. APIs may change without notice.
+
+This module provides:
+
+1. **FractionalDifferencer** - Neural network layer for fractional differencing,
+   useful for making time series stationary while preserving memory (based on
+   Marcos Lopez de Prado's "Advances in Financial Machine Learning").
+
+2. **RoughVolatilityFactorTemplate** - Code generation template for creating
+   rough volatility-based alpha factors with Hurst exponent < 0.5.
+
+3. **SymplecticTransformer** - Transformer architecture with symplectic attention
+   that theoretically preserves phase space volume (inspired by Hamiltonian
+   mechanics for more stable gradient flow).
+
+Example Usage
+-------------
+```python
+import torch
+from rdagent_lab.research.symplectic_templates import (
+    FractionalDifferencer,
+    SymplecticTransformer,
+    RoughVolatilityFactorTemplate,
+)
+
+# Fractional differencing layer
+diff = FractionalDifferencer(order=0.12, window_size=32)
+x = torch.randn(2, 100, 4)  # (batch, time, features)
+stationary = diff(x)
+
+# Symplectic Transformer for prediction
+model = SymplecticTransformer(d_feat=6, d_model=64, num_layers=2)
+predictions = model(x[:, :, :6])  # (batch, time) predictions
+
+# Generate factor code
+template = RoughVolatilityFactorTemplate(hurst_exponent=0.1)
+code = template.generate_factor_code(formula_idx=0, window=60)
+```
+
+References
+----------
+- Lopez de Prado, M. (2018). Advances in Financial Machine Learning. Wiley.
+- Gatheral, J. et al. (2018). Volatility is Rough. Quantitative Finance.
+- Toth, T. & Obermeyer, F. (2019). Hamiltonian Generative Networks. ICLR.
+"""
 
 from __future__ import annotations
 

@@ -154,20 +154,23 @@ def test_backtest_service_run_vectorbt_with_mock(
     sample_predictions: pd.Series, sample_prices: pd.DataFrame
 ) -> None:
     """Should handle vectorbt backtest with mocked portfolio."""
-    service = BacktestService()
-    config = BacktestConfig(engine="vectorbt", threshold=0.0)
+    import sys
 
-    # Mock vectorbt
+    # Create mock vectorbt module
+    mock_vbt = Mock()
     mock_portfolio = Mock()
     mock_portfolio.returns.return_value = pd.Series([0.01] * 10)
     mock_portfolio.value.return_value = pd.Series([100000] * 10)
     mock_portfolio.stats.return_value = {"Total Trades": 10, "Win Rate [%]": 55}
+    mock_vbt.Portfolio.from_signals.return_value = mock_portfolio
 
-    with patch("rdagent_lab.services.backtest.vbt", create=True) as mock_vbt:
-        mock_vbt.Portfolio.from_signals.return_value = mock_portfolio
+    # Patch sys.modules to provide fake vectorbt
+    with patch.dict(sys.modules, {"vectorbt": mock_vbt}):
+        service = BacktestService()
+        config = BacktestConfig(engine="vectorbt", threshold=0.0)
 
         result = service.run_vectorbt(sample_predictions, sample_prices, config)
 
         assert result.returns is not None
         assert result.portfolio_value is not None
-        assert "total_trades" in result.metrics or len(result.metrics) > 0
+        assert len(result.metrics) > 0

@@ -18,7 +18,7 @@ from litellm.exceptions import BadRequestError, Timeout
 # This is needed for subscription proxy (CLIProxyAPI) which uses openai/ prefix
 # but the underlying model may support different params
 litellm.drop_params = True
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from rdagent.log import LogColors
 from rdagent.log import rdagent_logger as logger
 from rdagent.oai.backend.base import APIBackend
@@ -38,10 +38,9 @@ for cls in [BadRequestError, Timeout]:
 
 
 class LiteLLMSettings(LLMSettings):
+    """LiteLLM-specific settings."""
 
-    class Config:
-        env_prefix = "LITELLM_"
-        """Use `LITELLM_` as prefix for environment variables"""
+    model_config = ConfigDict(env_prefix="LITELLM_")
 
     # Placeholder for LiteLLM specific settings, so far it's empty
 
