@@ -11,6 +11,7 @@ from typing import Any
 
 from rdagent.components.poetiq.conf import POETIQ_SETTINGS
 from rdagent.components.poetiq.early_exit import EarlyExitChecker
+from rdagent.components.poetiq.exploration import ParallelHypothesisGen, select_diverse_hypotheses
 from rdagent.components.workflow.conf import BasePropSetting
 from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.core.developer import Developer
@@ -37,6 +38,11 @@ class RDLoop(LoopBase, metaclass=LoopMeta):
         logger.log_object(RD_AGENT_SETTINGS.model_dump(), tag="RD_AGENT_SETTINGS")
         self.hypothesis_gen: HypothesisGen = import_class(PROP_SETTING.hypothesis_gen)(scen)
 
+        # Enable Poetiq parallel hypothesis generation when configured
+        self._parallel_enabled = POETIQ_SETTINGS.enabled and POETIQ_SETTINGS.parallel_experts > 1
+        if self._parallel_enabled:
+            self.hypothesis_gen = ParallelHypothesisGen(self.hypothesis_gen)
+
         self.hypothesis2experiment: Hypothesis2Experiment = import_class(PROP_SETTING.hypothesis2experiment)()
 
         self.coder: Developer = import_class(PROP_SETTING.coder)(scen)
@@ -45,6 +51,9 @@ class RDLoop(LoopBase, metaclass=LoopMeta):
         self.summarizer: Experiment2Feedback = import_class(PROP_SETTING.summarizer)(scen)
         self.trace = Trace(scen=scen)
         self.scen = scen  # Store scenario reference for seed model loading
+
+        # Buffer for extra hypotheses generated in parallel mode
+        self._hypothesis_buffer: list[Hypothesis] = []
 
         # Initialize Poetiq early exit checker if enabled
         self._early_exit_checker = EarlyExitChecker() if POETIQ_SETTINGS.enabled else None
@@ -171,10 +180,29 @@ class RDLoop(LoopBase, metaclass=LoopMeta):
             raise
 
     # excluded steps
-    def _propose(self):
+    def _propose(self) -> Hypothesis:
         hypothesis = self.hypothesis_gen.gen(self.trace)
         logger.log_object(hypothesis, tag="hypothesis generation")
         return hypothesis
+
+    def _next_hypothesis(self) -> Hypothesis:
+        """Get the next hypothesis, using parallel generation buffer when enabled."""
+        if self._hypothesis_buffer:
+            return self._hypothesis_buffer.pop(0)
+
+        if self._parallel_enabled and hasattr(self.hypothesis_gen, "gen_parallel"):
+            hypotheses = self.hypothesis_gen.gen_parallel(self.trace)
+            hypotheses = select_diverse_hypotheses(hypotheses, max_select=POETIQ_SETTINGS.parallel_experts)
+            if hypotheses:
+                primary = hypotheses[0]
+                self._hypothesis_buffer.extend(hypotheses[1:])
+                logger.log_object(
+                    {"primary": primary, "buffered": len(self._hypothesis_buffer)},
+                    tag="poetiq_parallel_hypothesis_generation",
+                )
+                return primary
+
+        return self._propose()
 
     def _exp_gen(self, hypothesis: Hypothesis):
         exp = self.hypothesis2experiment.convert(hypothesis, self.trace)
@@ -185,7 +213,7 @@ class RDLoop(LoopBase, metaclass=LoopMeta):
     async def direct_exp_gen(self, prev_out: dict[str, Any]):
         while True:
             if self.get_unfinished_loop_cnt(self.loop_idx) < RD_AGENT_SETTINGS.get_max_parallel():
-                hypo = self._propose()
+                hypo = self._next_hypothesis()
                 exp = self._exp_gen(hypo)
                 return {"propose": hypo, "exp_gen": exp}
             await asyncio.sleep(1)

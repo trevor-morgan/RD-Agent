@@ -7,12 +7,9 @@ enabling more nuanced experiment evaluation and selection.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from rdagent.core.proposal import HypothesisFeedback
-
-if TYPE_CHECKING:
-    pass
 
 
 @dataclass
@@ -147,13 +144,9 @@ def compute_soft_score(
         metric = POETIQ_SETTINGS.score_metric
 
     try:
-        # Handle dict or DataFrame-like result
-        if hasattr(result, "get"):
-            value = float(result.get(metric, 0))
-        elif hasattr(result, "loc"):
-            value = float(result.loc[metric].iloc[0] if hasattr(result.loc[metric], "iloc") else result.loc[metric])
-        else:
-            value = float(result)
+        value = _extract_metric_value(result, metric)
+        if value is None:
+            return SoftScore(value=0.0, confidence=0.3, components={metric: "missing"})
 
         # Normalize based on metric type
         normalized = _normalize_metric(value, metric)
@@ -187,6 +180,51 @@ def compute_soft_score(
     except (KeyError, ValueError, TypeError, AttributeError) as e:
         # Return zero score on any error
         return SoftScore(value=0.0, confidence=0.5, components={"error": str(e)})
+
+
+def _extract_metric_value(result: Any, metric: str) -> float | None:
+    """Extract a metric value from various result container types."""
+    if result is None:
+        return None
+
+    # Mapping-like
+    if hasattr(result, "get"):
+        try:
+            val = result.get(metric)
+            if val is not None:
+                return float(val)
+        except Exception:
+            pass
+
+    # DataFrame-like
+    if hasattr(result, "loc"):
+        try:
+            loc_val = result.loc[metric]
+            if hasattr(loc_val, "iloc"):
+                loc_val = loc_val.iloc[0]
+            return float(loc_val)
+        except Exception:
+            pass
+
+    # Sequence of pairs / nested mapping
+    if hasattr(result, "items"):
+        try:
+            for key, val in result.items():
+                if metric in str(key):
+                    if isinstance(val, dict):
+                        for sub_key, sub_val in val.items():
+                            if metric in str(sub_key):
+                                return float(sub_val)
+                    else:
+                        return float(val)
+        except Exception:
+            pass
+
+    # Simple numeric
+    try:
+        return float(result)
+    except Exception:
+        return None
 
 
 def _normalize_metric(value: float, metric: str) -> float:

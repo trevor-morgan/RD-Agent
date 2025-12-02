@@ -147,6 +147,17 @@ Ensure the current user can run Docker commands **without using sudo**. You can 
   cd RD-Agent
   make dev
   ```
+  If you prefer to skip the Makefile, the equivalent uv workflow is:
+  ```sh
+  uv sync --dev           # or uv sync --dev --frozen in CI
+  uv run ruff check rdagent/
+  uv run mypy rdagent/core
+  uv run isort rdagent/
+  uv run black rdagent/ test/
+  uv run pytest --maxfail=1 --disable-warnings --durations=10
+  # Build artifact
+  uv build
+  ```
 
 More details can be found in the [development setup](https://rdagent.readthedocs.io/en/latest/development.html).
 

@@ -9,7 +9,7 @@ trajectory_context: |-
   **Hypothesis**: {{ experiment.hypothesis.hypothesis[:200] }}...
   **Approach**: {% for task in experiment.sub_tasks %}{{ task.name }}{% if not loop.last %}, {% endif %}{% endfor %}
   {% if experiment.result is not none %}
-  **Metrics**: {{ experiment.result.loc[["IC", "1day.excess_return_without_cost.annualized_return"]] }}
+  **Metrics**: {{ experiment.result }}
   {% endif %}
   **Score**: {% if feedback.soft_score is defined %}{{ "%.2f"|format(feedback.soft_score.value) }}{% else %}{{ "1.0" if feedback.decision else "0.0" }}{% endif %}
   **Outcome**: {{ "Successful" if feedback.decision else "Did not meet threshold" }}
@@ -28,7 +28,7 @@ last_experiment_context: |-
   {% endif %}
   {% endfor %}
   {% if experiment.result is not none %}
-  **Results**: {{ experiment.result.loc[["IC", "1day.excess_return_without_cost.annualized_return", "1day.excess_return_without_cost.max_drawdown"]] }}
+  **Results**: {{ experiment.result }}
   {% endif %}
   **Training Log**: {{ experiment.stdout }}
   **Observations**: {{ feedback.observations }}

@@ -9,6 +9,7 @@ from rdagent.components.poetiq.selection import (
     ConsensusVotingSelector,
     StochasticSOTASelector,
 )
+from rdagent.core.proposal import Hypothesis, HypothesisFeedback, Trace
 
 
 class MockExperiment:
@@ -198,3 +199,63 @@ class TestConsensusVotingSelector:
         if result is not None:
             # Should select the higher-scoring one from the cluster
             assert result[1].soft_score.value == 0.9
+
+
+class TestTraceIntegration:
+    """Integration tests for Trace selection with Poetiq selectors."""
+
+    def _make_hypothesis(self, text: str) -> Hypothesis:
+        return Hypothesis(
+            hypothesis=text,
+            reason="",
+            concise_reason="",
+            concise_observation="",
+            concise_justification="",
+            concise_knowledge="",
+        )
+
+    def _make_feedback(self, score: float) -> HypothesisFeedback:
+        fb = HypothesisFeedback(
+            observations="",
+            hypothesis_evaluation="",
+            new_hypothesis="",
+            reason="",
+            decision=True,
+        )
+        fb.soft_score = SoftScore(value=score)
+        return fb
+
+    def test_get_sota_prefers_top_scoring_when_poetiq_enabled(self):
+        """Trace.get_sota_hypothesis_and_experiment should use Poetiq selector when enabled."""
+        trace = Trace(scen=Mock())
+
+        high_exp = Mock()
+        high_exp.hypothesis = self._make_hypothesis("High score")
+        high_exp.result = {"IC": 0.05}
+
+        low_exp = Mock()
+        low_exp.hypothesis = self._make_hypothesis("Low score")
+        low_exp.result = {"IC": 0.01}
+
+        # Append in order where the last decision=True is the low score to
+        # ensure deterministic fallback would pick the wrong one.
+        trace.hist = [
+            (high_exp, self._make_feedback(0.9)),
+            (low_exp, self._make_feedback(0.2)),
+        ]
+
+        with patch("rdagent.components.poetiq.conf.POETIQ_SETTINGS") as mock_settings, patch(
+            "random.random", return_value=0.0
+        ):
+            mock_settings.enabled = True
+            mock_settings.stochastic_sota_k = 2
+            mock_settings.stochastic_sota_temperature = 1.0
+            mock_settings.stochastic_sampling = "softmax"
+            mock_settings.consensus_enabled = False
+            mock_settings.consensus_similarity_threshold = 0.8
+            mock_settings.consensus_min_votes = 2
+
+            hypo, exp = trace.get_sota_hypothesis_and_experiment()
+
+        assert exp is high_exp
+        assert hypo == high_exp.hypothesis

@@ -172,11 +172,12 @@ class TestComputeSoftScore:
         """Should return zero score for missing metric."""
         result = {"Sharpe": 1.0}
         score = compute_soft_score(result, metric="IC")
-        # Missing metric defaults to 0, which normalizes to 0.5
-        assert score.value == pytest.approx(0.5)
+        # Missing metric now treated as failure
+        assert score.value == pytest.approx(0.0)
+        assert score.confidence == pytest.approx(0.3)
 
     def test_invalid_result(self):
         """Should return zero score with low confidence on error."""
         score = compute_soft_score(None, metric="IC")
         assert score.value == 0.0
-        assert score.confidence == 0.5
+        assert score.confidence == pytest.approx(0.3)

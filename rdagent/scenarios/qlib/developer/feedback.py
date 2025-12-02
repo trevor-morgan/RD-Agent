@@ -21,6 +21,48 @@ IMPORTANT_METRICS = [
 ]
 
 
+def _safe_select_metrics(result, metrics) -> dict:
+    """Safely select a subset of metrics from a result object."""
+    if result is None:
+        return {}
+
+    selected: dict = {}
+
+    # DataFrame-like with .loc
+    if hasattr(result, "loc"):
+        try:
+            existing = [m for m in metrics if m in getattr(result, "index", [])]
+            if existing:
+                return result.loc[existing]
+        except Exception:
+            pass
+
+    # Mapping-like
+    if hasattr(result, "get"):
+        for metric in metrics:
+            try:
+                if metric in result:
+                    selected[metric] = result.get(metric)
+            except Exception:
+                continue
+        return selected
+
+    return selected
+
+
+def _format_result_for_prompt(result, metrics) -> str:
+    """Return a concise, safe string representation for prompt rendering."""
+    if result is None:
+        return "execution failed"
+
+    subset = _safe_select_metrics(result, metrics)
+    if subset:
+        return str(subset)
+
+    # Fallback to raw string representation
+    return str(result)
+
+
 def process_results(current_result, sota_result):
     # Convert the results to dataframes
     current_df = pd.DataFrame(current_result)
@@ -169,7 +211,7 @@ class QlibModelExperiment2Feedback(Experiment2Feedback):
             top_experiments=top_experiments,
             hypothesis=hypothesis,
             exp=exp,
-            exp_result=exp.result.loc[IMPORTANT_METRICS] if exp.result is not None else "execution failed",
+            exp_result=_format_result_for_prompt(exp.result, IMPORTANT_METRICS),
         )
 
         # Call the APIBackend to generate the response
@@ -230,10 +272,12 @@ class QlibModelExperiment2Feedback(Experiment2Feedback):
             sota_hypothesis=SOTA_hypothesis,
             sota_task=SOTA_experiment.sub_tasks[0].get_task_information() if SOTA_hypothesis else None,
             sota_code=SOTA_experiment.sub_workspace_list[0].file_dict.get("model.py") if SOTA_hypothesis else None,
-            sota_result=SOTA_experiment.result.loc[IMPORTANT_METRICS] if SOTA_hypothesis else None,
+            sota_result=_format_result_for_prompt(SOTA_experiment.result if SOTA_experiment else None, IMPORTANT_METRICS)
+            if SOTA_hypothesis
+            else None,
             hypothesis=hypothesis,
             exp=exp,
-            exp_result=exp.result.loc[IMPORTANT_METRICS] if exp.result is not None else "execution failed",
+            exp_result=_format_result_for_prompt(exp.result, IMPORTANT_METRICS),
         )
 
         # Call the APIBackend to generate the response for hypothesis feedback

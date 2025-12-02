@@ -6,6 +6,7 @@ similar to Poetiq's multi-expert ensemble approach.
 
 from __future__ import annotations
 
+import threading
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -27,6 +28,9 @@ class ParallelHypothesisGen:
             base_gen: Base hypothesis generator to wrap
         """
         self.base_gen = base_gen
+        # Serialize seed overrides to avoid cross-task leakage when multiple
+        # hypotheses are generated in parallel.
+        self._seed_lock = threading.Lock()
 
     def gen(self, trace: Trace, plan: object = None) -> Hypothesis:
         """Generate single hypothesis (backward compatible).
@@ -66,12 +70,13 @@ class ParallelHypothesisGen:
 
         for i in range(n):
             try:
-                # Modify seed for diversity
-                LLM_SETTINGS.init_chat_cache_seed = (
-                    original_seed + i * POETIQ_SETTINGS.parallel_expert_seed_offset
-                )
+                with self._seed_lock:
+                    # Modify seed for diversity
+                    LLM_SETTINGS.init_chat_cache_seed = (
+                        original_seed + i * POETIQ_SETTINGS.parallel_expert_seed_offset
+                    )
 
-                h = self.base_gen.gen(trace, plan)
+                    h = self.base_gen.gen(trace, plan)
                 if h is not None:
                     hypotheses.append(h)
 
@@ -80,7 +85,8 @@ class ParallelHypothesisGen:
                 pass
             finally:
                 # Restore original seed
-                LLM_SETTINGS.init_chat_cache_seed = original_seed
+                with self._seed_lock:
+                    LLM_SETTINGS.init_chat_cache_seed = original_seed
 
         # Ensure we return at least one hypothesis
         if not hypotheses:

@@ -57,6 +57,47 @@ Note: `evolving_version` in CoSTEER is a **different concept** - it controls kno
 
 **Risk Level:** High - Requires changes to 50+ files
 
+### Poetiq Exploration-Based R&D Mode - COMPLETED ✅
+
+Implemented Poetiq strategies from ARC-AGI solver as an alternative to the SOTA paradigm.
+
+**Paradigm Shift:**
+| Aspect | Standard Mode | Poetiq Mode |
+|--------|---------------|-------------|
+| Goal | Beat the SOTA | Explore until threshold met |
+| Feedback | Binary decision | Soft score 0.0-1.0 |
+| Context | SOTA experiment | Top-K experiments + trajectory |
+| Prompts | "surpass SOTA" | "diverse exploration" |
+| Exit | Max iterations | Early exit on threshold |
+
+**New Module:** `rdagent/components/poetiq/`
+- `conf.py` - `PoetiqSettings` with `POETIQ_` env prefix
+- `feedback.py` - `SoftScore`, `ScoredHypothesisFeedback`, `compute_soft_score()`
+- `selection.py` - `StochasticSOTASelector`, `ConsensusVotingSelector`
+- `exploration.py` - `ParallelHypothesisGen`
+- `early_exit.py` - `EarlyExitChecker`
+- `trajectory.py` - `TrajectoryFormatter`
+
+**Integration Points:**
+- `rdagent/components/workflow/rd_loop.py:49-50,220-227` - Early exit checker + parallel hypothesis generation buffer
+- `rdagent/core/proposal.py:171-199` - Poetiq selectors hook SOTA retrieval (consensus → stochastic)
+- `rdagent/scenarios/qlib/proposal/model_proposal.py:20-119` - Poetiq context preparation
+- `rdagent/scenarios/qlib/developer/feedback.py:134-305` - Scored feedback generation
+- `rdagent/scenarios/qlib/poetiq_prompts.yaml` - Exploration-focused prompts
+
+**Configuration:**
+```bash
+POETIQ_ENABLED=true                    # Enable Poetiq mode
+POETIQ_SCORE_THRESHOLD=0.5             # Decision threshold
+POETIQ_EARLY_EXIT_METRIC=IC            # Metric to monitor
+POETIQ_EARLY_EXIT_THRESHOLD=0.05       # Exit when IC >= 0.05
+POETIQ_EARLY_EXIT_DIRECTION=higher     # "higher" or "lower"
+POETIQ_STOCHASTIC_SOTA_K=3             # Sample from top-K
+POETIQ_CONSENSUS_ENABLED=false         # Cluster voting
+```
+
+**Tests:** 35 tests in `test/poetiq/`
+
 ### Multi-Provider Subscription Proxy Support - VERIFIED WORKING ✅
 
 Added support for using subscription-based AI services (Claude Max, ChatGPT Pro, Gemini) via CLIProxyAPI.
@@ -101,6 +142,10 @@ Two levels of workspaces exist:
 | `Trace` | `rdagent/core/proposal.py` | Experiment history with DAG structure |
 | `FBWorkspace` | `rdagent/core/experiment.py` | File-based workspace for code execution |
 | `RDLoop` | `rdagent/components/workflow/rd_loop.py` | Main R&D loop workflow |
+| `SoftScore` | `rdagent/components/poetiq/feedback.py` | Continuous score [0-1] with components |
+| `ScoredHypothesisFeedback` | `rdagent/components/poetiq/feedback.py` | Feedback with soft scoring |
+| `EarlyExitChecker` | `rdagent/components/poetiq/early_exit.py` | Threshold-based loop termination |
+| `TrajectoryFormatter` | `rdagent/components/poetiq/trajectory.py` | Format experiment history for LLM |
 
 ## Development Commands
 
@@ -129,3 +174,10 @@ t = FactorTask('test', 'test', 'test', version=2)
 | `rdagent/scenarios/kaggle/experiment/kaggle_experiment.py` | Added `sub_results`, fixed type annotations |
 | `rdagent/oai/llm_utils.py` | Added `md5_hash` re-export |
 | `ARCHITECTURE_REFACTOR_PLAN.md` | Updated with findings and completion status |
+| `rdagent/components/poetiq/*` | **NEW** - Full Poetiq module (7 files) |
+| `rdagent/components/workflow/rd_loop.py` | Early exit + Poetiq parallel hypothesis buffering |
+| `rdagent/core/proposal.py` | Poetiq selectors for SOTA retrieval |
+| `rdagent/scenarios/qlib/proposal/model_proposal.py` | Poetiq context preparation |
+| `rdagent/scenarios/qlib/developer/feedback.py` | Scored feedback generation + resilient metric handling |
+| `rdagent/scenarios/qlib/poetiq_prompts.yaml` | **NEW** - Exploration-focused prompts (safe result rendering) |
+| `test/poetiq/*` | **NEW** - 36 unit tests for Poetiq components |

@@ -172,6 +172,39 @@ class Trace(Generic[ASpecificScen, ASpecificKB]):
             A tuple of (hypothesis, experiment) from the SOTA experiment,
             or (None, None) if no successful experiment exists.
         """
+        # When Poetiq is enabled, prefer stochastic/consensus selection over
+        # the deterministic last-successful experiment to diversify exploration.
+        try:
+            from rdagent.components.poetiq.conf import POETIQ_SETTINGS
+            from rdagent.components.poetiq.selection import (
+                ConsensusVotingSelector,
+                StochasticSOTASelector,
+            )
+
+            if POETIQ_SETTINGS.enabled:
+                selector = StochasticSOTASelector(
+                    k=max(1, POETIQ_SETTINGS.stochastic_sota_k),
+                    temperature=POETIQ_SETTINGS.stochastic_sota_temperature,
+                    sampling=POETIQ_SETTINGS.stochastic_sampling,
+                )
+                consensus = ConsensusVotingSelector(
+                    similarity_threshold=POETIQ_SETTINGS.consensus_similarity_threshold,
+                    min_votes=POETIQ_SETTINGS.consensus_min_votes,
+                )
+
+                consensus_choice = consensus.select(self)
+                if consensus_choice is not None:
+                    exp, _ = consensus_choice
+                    return exp.hypothesis, exp
+
+                stochastic_choice = selector.select(self)
+                if stochastic_choice is not None:
+                    exp, _ = stochastic_choice
+                    return exp.hypothesis, exp
+        except Exception:
+            # Fall back to deterministic selection on any import/runtime issues
+            pass
+
         for experiment, feedback in self.hist[::-1]:
             if feedback.decision:
                 return experiment.hypothesis, experiment
