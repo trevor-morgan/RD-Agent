@@ -10,6 +10,8 @@ from rdagent.utils.env import (
     LocalEnv,
     MLEBDockerConf,
     MLECondaConf,
+    UvConf,
+    UvEnv,
 )
 
 
@@ -65,6 +67,8 @@ def get_ds_env(
                 CondaConf(conda_env_name=conf_type) if conf_type == "kaggle" else MLECondaConf(conda_env_name=conf_type)
             )
         )
+    elif conf.env_type == "uv":
+        env = UvEnv(conf=UvConf(uv_env_name=conf_type))
     else:
         raise ValueError(f"Unknown env type: {conf.env_type}")
     env.conf.extra_volumes = extra_volumes.copy()
