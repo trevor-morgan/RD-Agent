@@ -26,14 +26,14 @@ class DSFinetuneScen(ExtendedBaseSettings):
     app_tpl: str = "app/finetune/data_science/tpl"
 
 
-def update_settings(competition: str):
+def update_settings(competition: str) -> None:
     """
-    Update the RD_AGENT_SETTINGS with the values from DS_FINETUNE_SETTINGS.
+    Update the RD_AGENT_SETTINGS with the values from ds_finetune_settings.
     """
-    DS_FINETUNE_SETTINGS = DSFinetuneScen()
-    RD_AGENT_SETTINGS.app_tpl = DS_FINETUNE_SETTINGS.app_tpl
+    ds_finetune_settings = DSFinetuneScen()
+    RD_AGENT_SETTINGS.app_tpl = ds_finetune_settings.app_tpl
     os.environ["DS_CODER_COSTEER_EXTRA_EVALUATOR"] = '["rdagent.app.finetune.share.eval.PrevModelLoadEvaluator"]'
-    for field_name, new_value in DS_FINETUNE_SETTINGS.model_dump().items():
+    for field_name, new_value in ds_finetune_settings.model_dump().items():
         if hasattr(DS_RD_SETTING, field_name):
             setattr(DS_RD_SETTING, field_name, new_value)
     DS_RD_SETTING.competition = competition

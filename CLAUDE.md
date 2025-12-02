@@ -227,6 +227,34 @@ curl -fsSL https://raw.githubusercontent.com/brokechubb/cliproxyapi-installer/re
 ./cli-proxy-api
 ```
 
+### Infrastructure Updates (RunPod & Uv) - COMPLETED ✅
+
+Optimized the project for deployment on RunPod (GPU cloud) using a fast `uv`-based backend instead of Docker-in-Docker.
+
+**Features:**
+1.  **Uv Backend** - New `UvEnv` class in `utils/env.py` replaces Conda/Docker for faster environment management.
+2.  **RunPod Optimization** - Deployment strategy uses direct execution on host + SSH tunneling for proxy access.
+3.  **Data Patching** - Identified stale default Qlib data (ends 2020) and patched templates to use `2010-2020` range.
+4.  **Hardware Compatibility** - Updated PyTorch installation instructions to handle newer GPUs (RTX 4090/5090).
+
+**New Files:**
+- `rdagent/utils/env.py` - Added `UvEnv` and `UvConf`.
+- `rdagent/components/coder/model_coder/conf.py` - Added `uv` support to factory.
+
+**Deployment Commands:**
+```bash
+# Connect to RunPod + Tunnel Proxy + Launch Agent
+ssh -R 38882:localhost:8317 user@pod-ip -t "cd /workspace/RD-Agent && uv run python -m rdagent.app.cli fin_model"
+```
+
+**Remote Configuration (.env):**
+```ini
+MODEL_CoSTEER_env_type=uv
+RUNNING_TIMEOUT_PERIOD=3600
+LITELLM_USE_SUBSCRIPTION_PROXY=true
+LITELLM_SUBSCRIPTION_PROXY_URL=http://localhost:38882/v1
+```
+
 ## Architecture Notes
 
 ### Workspace Hierarchy

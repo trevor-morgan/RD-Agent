@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Literal
 
-import numpy as np
 import pandas as pd
 from loguru import logger
 
@@ -68,8 +66,10 @@ class BacktestService:
         logger.info(f"Running Qlib backtest: strategy={config.strategy_type}")
         try:
             from qlib.contrib.evaluate import backtest as qlib_backtest
-        except ImportError as exc:  # noqa: BLE001
-            raise ConfigurationError("qlib", f"Qlib not available: {exc}") from exc
+        except ImportError as exc:
+            raise ConfigurationError(
+                "qlib", f"Qlib not available. Install with: pip install rdagent[quant-lab]. Error: {exc}"
+            ) from exc
 
         strategy_config = {
             "class": "TopkDropoutStrategy",
@@ -120,8 +120,10 @@ class BacktestService:
         logger.info("Running VectorBT backtest")
         try:
             import vectorbt as vbt
-        except ImportError as exc:  # noqa: BLE001
-            raise ConfigurationError("vectorbt", f"VectorBT not available: {exc}") from exc
+        except ImportError as exc:
+            raise ConfigurationError(
+                "vectorbt", f"VectorBT not available. Install with: pip install rdagent[backtest]. Error: {exc}"
+            ) from exc
 
         if isinstance(signals, pd.Series) and signals.index.nlevels > 1:
             signals = signals.unstack()

@@ -10,12 +10,12 @@ import pandas as pd
 from loguru import logger
 
 from rdagent_lab.core.base import BaseModel
-from rdagent_lab.core.registry import ModelRegistry
 from rdagent_lab.core.exceptions import (
-    ModelTrainingError,
     ConfigurationError,
     DataNotFoundError,
+    ModelTrainingError,
 )
+from rdagent_lab.core.registry import ModelRegistry
 
 
 @dataclass
@@ -70,8 +70,10 @@ class TrainingService:
             qlib.init(provider_uri=str(provider_uri), region=region)
             self._qlib_initialized = True
             logger.info(f"Qlib initialized with provider: {provider_uri}")
-        except ImportError as exc:  # noqa: BLE001
-            raise ConfigurationError("qlib", f"Qlib not installed: {exc}") from exc
+        except ImportError as exc:
+            raise ConfigurationError(
+                "qlib", f"Qlib not installed. Install with: pip install rdagent[quant-lab]. Error: {exc}"
+            ) from exc
 
     def _create_dataset(self, config: TrainingConfig) -> Any:
         from qlib.data.dataset import DatasetH
@@ -125,13 +127,13 @@ class TrainingService:
         model = self._create_model(config)
         try:
             model.fit(dataset)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise ModelTrainingError(config.model_type, str(exc)) from exc
 
         predictions = model.predict(dataset)
         feature_importance = None
         if hasattr(model, "get_feature_importance"):
-            feature_importance = getattr(model, "get_feature_importance")()
+            feature_importance = model.get_feature_importance()
 
         metrics = self._calculate_metrics(predictions, dataset)
 
@@ -213,9 +215,9 @@ class TrainingService:
 
     def train_with_qlib_workflow(self, config_path: str | Path) -> dict[str, Any]:
         """Use Qlib's native workflow runner for full compatibility."""
-        from qlib.workflow import R
-        from qlib.utils import init_instance_by_config
         import yaml
+        from qlib.utils import init_instance_by_config
+        from qlib.workflow import R
 
         config_path = Path(config_path)
         with open(config_path) as handle:

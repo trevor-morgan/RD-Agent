@@ -35,7 +35,15 @@ from rdagent.app.utils.docker_cleanup_cli import app as cleanup_app  # noqa: E40
 from rdagent.app.utils.health_check import health_check  # noqa: E402
 from rdagent.app.utils.info import collect_info  # noqa: E402
 from rdagent.log.mle_summary import grade_summary  # noqa: E402
-from rdagent_lab.cli import app as lab_app  # noqa: E402
+
+# Lab CLI is optional - requires quant-lab extras
+try:
+    from rdagent_lab.cli import app as lab_app
+
+    _HAS_LAB = True
+except ImportError:
+    lab_app = None
+    _HAS_LAB = False
 
 app = typer.Typer()
 
@@ -82,7 +90,8 @@ app.command(name="fin_model")(fin_model)
 app.command(name="fin_quant")(fin_quant)
 app.command(name="fin_factor_report")(fin_factor_report)
 app.command(name="general_model")(general_model)
-app.add_typer(lab_app, name="lab", help="RD-Agent Lab commands (Qlib workflows, backtests, research)")
+if _HAS_LAB and lab_app is not None:
+    app.add_typer(lab_app, name="lab", help="RD-Agent Lab commands (Qlib workflows, backtests, research)")
 app.add_typer(cleanup_app, name="cleanup", help="Docker resource cleanup commands")
 app.command(name="data_science")(data_science)
 app.command(name="grade_summary")(grade_summary)
