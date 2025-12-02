@@ -1,6 +1,8 @@
 import json
 
 from rdagent.components.coder.model_coder.model import ModelExperiment, ModelTask
+from rdagent.components.poetiq.conf import POETIQ_SETTINGS
+from rdagent.components.poetiq.trajectory import TrajectoryFormatter
 from rdagent.components.proposal import ModelHypothesis2Experiment, ModelHypothesisGen
 from rdagent.core.proposal import Hypothesis, Scenario, Trace
 from rdagent.scenarios.qlib.experiment.model_experiment import QlibModelExperiment
@@ -13,8 +15,52 @@ QlibModelHypothesis = Hypothesis
 class QlibModelHypothesisGen(ModelHypothesisGen):
     def __init__(self, scen: Scenario) -> tuple[dict, bool]:
         super().__init__(scen)
+        self._trajectory_formatter = TrajectoryFormatter() if POETIQ_SETTINGS.enabled else None
 
     def prepare_context(self, trace: Trace) -> tuple[dict, bool]:
+        # Use Poetiq exploration-based prompts when enabled
+        if POETIQ_SETTINGS.enabled:
+            return self._prepare_poetiq_context(trace)
+        return self._prepare_standard_context(trace)
+
+    def _prepare_poetiq_context(self, trace: Trace) -> tuple[dict, bool]:
+        """Prepare context using Poetiq exploration paradigm."""
+        trajectory_context = (
+            T("scenarios.qlib.poetiq_prompts:trajectory_context").r(trace=trace)
+            if len(trace.hist) > 0
+            else "No experiments recorded yet. This is the first exploration."
+        )
+
+        last_experiment_context = (
+            T("scenarios.qlib.poetiq_prompts:last_experiment_context").r(
+                experiment=trace.hist[-1][0], feedback=trace.hist[-1][1]
+            )
+            if len(trace.hist) > 0
+            else "No previous experiment. Start with a simple, testable architecture."
+        )
+
+        # Get top experiments by score
+        top_experiments = self._get_top_experiments(trace, k=3)
+        top_experiments_summary = (
+            T("scenarios.qlib.poetiq_prompts:top_experiments_summary").r(
+                top_experiments=top_experiments
+            )
+            if top_experiments
+            else "No successful experiments yet."
+        )
+
+        context_dict = {
+            "trajectory_context": trajectory_context,
+            "last_experiment_context": last_experiment_context,
+            "top_experiments_summary": top_experiments_summary,
+            "RAG": "1. In Quantitative Finance, market data could be time-series, and GRU model/LSTM model are suitable for them. Do not generate GNN model as for now.\n2. The training data consists of less than 1 million samples for the training set and approximately 250,000 samples for the validation set. Please design the hyperparameters accordingly and control the model size.",
+            "hypothesis_output_format": T("scenarios.qlib.poetiq_prompts:hypothesis_output_format").r(),
+            "hypothesis_specification": T("scenarios.qlib.poetiq_prompts:exploration_hypothesis_spec").r(),
+        }
+        return context_dict, True
+
+    def _prepare_standard_context(self, trace: Trace) -> tuple[dict, bool]:
+        """Prepare context using standard SOTA paradigm."""
         hypothesis_and_feedback = (
             T("scenarios.qlib.prompts:hypothesis_and_feedback").r(
                 trace=trace,
@@ -55,6 +101,22 @@ class QlibModelHypothesisGen(ModelHypothesisGen):
             "hypothesis_specification": T("scenarios.qlib.prompts:model_hypothesis_specification").r(),
         }
         return context_dict, True
+
+    def _get_top_experiments(self, trace: Trace, k: int = 3) -> list[tuple]:
+        """Get top-K experiments by score.
+
+        Returns list of (experiment, feedback, score) tuples.
+        """
+        scored = []
+        for exp, fb in trace.hist:
+            if not fb.decision:
+                continue
+            soft_score = getattr(fb, "soft_score", None)
+            score = soft_score.value if soft_score else 1.0
+            scored.append((exp, fb, score))
+
+        scored.sort(key=lambda x: x[2], reverse=True)
+        return scored[:k]
 
     def convert_response(self, response: str) -> Hypothesis:
         response_dict = json.loads(response)

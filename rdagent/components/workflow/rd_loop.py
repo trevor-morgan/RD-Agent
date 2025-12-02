@@ -9,6 +9,8 @@ import asyncio
 from pathlib import Path
 from typing import Any
 
+from rdagent.components.poetiq.conf import POETIQ_SETTINGS
+from rdagent.components.poetiq.early_exit import EarlyExitChecker
 from rdagent.components.workflow.conf import BasePropSetting
 from rdagent.core.conf import RD_AGENT_SETTINGS
 from rdagent.core.developer import Developer
@@ -43,6 +45,10 @@ class RDLoop(LoopBase, metaclass=LoopMeta):
         self.summarizer: Experiment2Feedback = import_class(PROP_SETTING.summarizer)(scen)
         self.trace = Trace(scen=scen)
         self.scen = scen  # Store scenario reference for seed model loading
+
+        # Initialize Poetiq early exit checker if enabled
+        self._early_exit_checker = EarlyExitChecker() if POETIQ_SETTINGS.enabled else None
+
         super().__init__()
 
     def _load_seed_model(self, model_path: str, hypothesis_text: str) -> None:
@@ -210,6 +216,15 @@ class RDLoop(LoopBase, metaclass=LoopMeta):
             feedback = self.summarizer.generate_feedback(prev_out["running"], self.trace)
             logger.log_object(feedback, tag="feedback")
             self.trace.hist.append((prev_out["running"], feedback))
+
+        # Check for Poetiq early exit condition
+        if self._early_exit_checker is not None and POETIQ_SETTINGS.enabled:
+            should_exit, reason = self._early_exit_checker.should_exit(self.trace)
+            if should_exit:
+                logger.info(f"Poetiq early exit triggered: {reason}")
+                from rdagent.utils.workflow.loop import LoopTerminationError
+
+                raise LoopTerminationError(reason)
 
     # TODO: `def record(self, prev_out: dict[str, Any]):` has already been hard coded into LoopBase
     # So we should add it into RDLoop class to make sure every RDLoop Sub Class be aware of it.

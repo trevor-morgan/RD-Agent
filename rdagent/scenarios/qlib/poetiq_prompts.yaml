@@ -1,0 +1,142 @@
+# Poetiq-style prompts for exploration-based R&D
+# These prompts focus on diverse exploration rather than "beating SOTA"
+
+trajectory_context: |-
+  =========================================================
+  ## Experiment Trajectory ({{ trace.hist|length }} experiments)
+  {% for experiment, feedback in trace.hist %}
+  ### Experiment {{ loop.index }}
+  **Hypothesis**: {{ experiment.hypothesis.hypothesis[:200] }}...
+  **Approach**: {% for task in experiment.sub_tasks %}{{ task.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+  {% if experiment.result is not none %}
+  **Metrics**: {{ experiment.result.loc[["IC", "1day.excess_return_without_cost.annualized_return"]] }}
+  {% endif %}
+  **Score**: {% if feedback.soft_score is defined %}{{ "%.2f"|format(feedback.soft_score.value) }}{% else %}{{ "1.0" if feedback.decision else "0.0" }}{% endif %}
+  **Outcome**: {{ "Successful" if feedback.decision else "Did not meet threshold" }}
+  **Key Insight**: {{ feedback.observations[:150] }}...
+  ---------------------------------------------------------
+  {% endfor %}
+  =========================================================
+
+last_experiment_context: |-
+  ## Most Recent Experiment
+  **Hypothesis**: {{ experiment.hypothesis }}
+  **Tasks**:
+  {% for task in experiment.sub_tasks %}
+  {% if task is not none and task.get_task_brief_information is defined %}
+  {{ task.get_task_brief_information() }}
+  {% endif %}
+  {% endfor %}
+  {% if experiment.result is not none %}
+  **Results**: {{ experiment.result.loc[["IC", "1day.excess_return_without_cost.annualized_return", "1day.excess_return_without_cost.max_drawdown"]] }}
+  {% endif %}
+  **Training Log**: {{ experiment.stdout }}
+  **Observations**: {{ feedback.observations }}
+  **Evaluation**: {{ feedback.hypothesis_evaluation }}
+  **Score**: {% if feedback.soft_score is defined %}{{ "%.2f"|format(feedback.soft_score.value) }}{% else %}{{ "1.0" if feedback.decision else "0.0" }}{% endif %}
+  **Suggested Direction**: {{ feedback.new_hypothesis }}
+
+top_experiments_summary: |-
+  ## Top Performing Experiments
+  {% for exp, fb, score in top_experiments %}
+  ### Rank {{ loop.index }} (Score: {{ "%.2f"|format(score) }})
+  - **Hypothesis**: {{ exp.hypothesis.hypothesis[:150] }}...
+  - **Key Result**: {% if exp.result is not none %}IC={{ exp.result.get("IC", "N/A") }}{% endif %}
+  {% endfor %}
+
+exploration_hypothesis_spec: |-
+  ## Exploration Guidelines
+
+  You are exploring the space of quantitative models. Your goal is NOT to beat a single best model,
+  but to discover diverse approaches that meet the performance threshold.
+
+  **Exploration Strategies:**
+  1. **Diversify**: If recent experiments cluster around similar approaches, try something fundamentally different
+  2. **Learn from patterns**: Look at the trajectory - what types of approaches tend to score higher?
+  3. **Build on insights**: Combine elements from multiple successful experiments
+  4. **Avoid repetition**: Don't re-implement approaches that have already been tried
+
+  **Threshold Target:**
+  - IC >= 0.03 is considered successful
+  - Annualized return > 0% indicates viable strategy
+
+  **Architecture Focus:**
+  - Focus on PyTorch model architectures (layers, activations, regularization)
+  - Consider time-series nature of data (GRU, LSTM, Transformer variants)
+  - Balance model complexity with training data size (~1M training samples)
+
+  **When to pivot:**
+  - If 3+ similar approaches fail, explore a completely different direction
+  - If training issues persist, simplify architecture before adding complexity
+
+hypothesis_output_format: |-
+  The output should follow JSON format:
+  {
+    "hypothesis": "A specific, testable statement about what architectural change will improve performance. Be precise about the approach.",
+    "reason": "Why this hypothesis is worth exploring, based on trajectory patterns and domain knowledge. 1-2 sentences.",
+    "exploration_type": "One of: 'novel' (new direction), 'refinement' (improving prior approach), 'combination' (merging ideas)"
+  }
+
+model_feedback_generation:
+  system: |-
+    You are an experiment evaluator for quantitative model research.
+
+    {{ scenario }}
+
+    Your task is to evaluate the current experiment and provide a score from 0.0 to 1.0.
+    This is NOT about determining if this is "the best" - it's about measuring how well
+    the experiment performed against absolute thresholds.
+
+    **Scoring Guidelines:**
+    - 0.9-1.0: Exceeds all thresholds significantly (IC > 0.05, strong returns)
+    - 0.7-0.9: Meets thresholds with good performance (IC > 0.03, positive returns)
+    - 0.5-0.7: Partially meets thresholds (IC > 0.02, mixed returns)
+    - 0.3-0.5: Below thresholds but shows promise (IC > 0.01)
+    - 0.0-0.3: Does not meet thresholds, significant issues
+
+    **Evaluation Focus:**
+    1. Did the model train successfully? (check training logs)
+    2. What is the IC score? (primary metric)
+    3. What is the annualized return? (practical viability)
+    4. Are there overfitting signs? (train vs validation gap)
+
+    Respond in JSON format:
+    {
+      "observations": "Objective analysis of results and training process",
+      "hypothesis_evaluation": "Did the hypothesis lead to expected outcomes?",
+      "new_hypothesis": "Suggested next direction for exploration",
+      "reason": "Why this direction is promising",
+      "score": <float between 0.0 and 1.0>,
+      "score_components": {
+        "ic_score": <normalized IC contribution>,
+        "return_score": <normalized return contribution>,
+        "training_quality": <training stability score>
+      },
+      "decision": <true if score >= 0.5, false otherwise>
+    }
+
+  user: |-
+    ## Trajectory Summary
+    Total experiments: {{ trace.hist|length }}
+    Successful experiments: {{ successful_count }}
+    Average score: {{ avg_score }}
+
+    {% if top_experiments %}
+    ## Reference: Top 3 Experiments
+    {% for exp, fb, score in top_experiments[:3] %}
+    - Score {{ "%.2f"|format(score) }}: {{ exp.hypothesis.hypothesis[:100] }}...
+    {% endfor %}
+    {% endif %}
+
+    ## Current Experiment
+    **Hypothesis**: {{ hypothesis.hypothesis }}
+    **Reasoning**: {{ hypothesis.reason }}
+    **Task**: {{ exp.sub_tasks[0].get_task_information() }}
+    **Implementation**:
+    ```python
+    {{ exp.sub_workspace_list[0].file_dict.get("model.py")[:2000] }}
+    ```
+    **Training Log**: {{ exp.stdout[-1000:] }}
+    **Results**: {{ exp_result }}
+
+    Evaluate this experiment and provide a score.
