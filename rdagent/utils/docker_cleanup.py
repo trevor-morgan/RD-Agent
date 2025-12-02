@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class DockerCleanupManager:
     """Manages Docker resource cleanup operations."""
 
-    def __init__(self, client: DockerClient | None = None):
+    def __init__(self, client: DockerClient | None = None) -> None:
         self._client = client
 
     @property
@@ -43,7 +43,7 @@ class DockerCleanupManager:
                     f"Cleaned {images_deleted} dangling images, reclaimed {space_reclaimed / 1024 / 1024:.2f} MB"
                 )
             return result
-        except Exception as e:
+        except docker.errors.APIError as e:
             logger.warning(f"Failed to cleanup dangling images: {e}")
             return {}
 
@@ -66,7 +66,7 @@ class DockerCleanupManager:
                     f"Cleaned {containers_deleted} stopped containers, reclaimed {space_reclaimed / 1024 / 1024:.2f} MB"
                 )
             return result
-        except Exception as e:
+        except docker.errors.APIError as e:
             logger.warning(f"Failed to cleanup stopped containers: {e}")
             return {}
 
@@ -86,7 +86,7 @@ class DockerCleanupManager:
             if space_reclaimed > 0:
                 logger.info(f"Cleaned build cache, reclaimed {space_reclaimed / 1024 / 1024:.2f} MB")
             return result
-        except Exception as e:
+        except docker.errors.APIError as e:
             logger.warning(f"Failed to cleanup build cache: {e}")
             return {}
 
@@ -108,11 +108,11 @@ class DockerCleanupManager:
                             self.client.images.remove(image.id, force=True)
                             removed.append(tag)
                             logger.info(f"Removed image: {tag}")
-                        except Exception as img_err:
+                        except docker.errors.APIError as img_err:
                             logger.warning(f"Failed to remove image {tag}: {img_err}")
                         break
             return removed
-        except Exception as e:
+        except docker.errors.APIError as e:
             logger.warning(f"Failed to cleanup RD-Agent images: {e}")
             return removed
 
@@ -124,7 +124,7 @@ class DockerCleanupManager:
         """
         try:
             return self.client.df()
-        except Exception as e:
+        except docker.errors.APIError as e:
             logger.warning(f"Failed to get disk usage: {e}")
             return {}
 

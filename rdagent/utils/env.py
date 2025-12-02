@@ -7,13 +7,17 @@ Tries to create uniform environment for the agent to run;
 
 # TODO: move the scenario specific docker env into other folders.
 
+from __future__ import annotations
+
 import contextlib
+import hashlib
 import json
 import os
 import pickle
 import select
 import shutil
 import subprocess
+import tempfile
 import time
 import uuid
 import zipfile
@@ -22,9 +26,10 @@ from collections.abc import Generator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Generic, TypeVar, cast
+from typing import Any, Generic, Self, TypeVar, cast
 
 import docker  # type: ignore[import-untyped]
+import docker.errors  # type: ignore[import-untyped]
 import docker.models  # type: ignore[import-untyped]
 import docker.models.containers  # type: ignore[import-untyped]
 import docker.types  # type: ignore[import-untyped]
@@ -36,9 +41,10 @@ from rdagent.log import rdagent_logger as logger
 from rdagent.oai.llm_utils import md5_hash
 from rdagent.utils import filter_redundant_text
 from rdagent.utils.agent.tpl import T
+from rdagent.utils.docker_cleanup import post_run_cleanup, pre_build_cleanup
 from rdagent.utils.fmt import shrink_text
 from rdagent.utils.workflow import wait_retry
-from rich import print
+from rich import print as rich_print
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.rule import Rule
@@ -63,7 +69,7 @@ def cleanup_container(container: docker.models.containers.Container | None, cont
             # Always stop first - stop() doesn't raise error if already stopped
             container.stop()
             container.remove()
-        except Exception as cleanup_error:
+        except docker.errors.APIError as cleanup_error:
             # Log cleanup error but don't mask the original exception
             context_str = f" {context}" if context else ""
             logger.warning(f"Failed to cleanup{context_str} container {container.id}: {cleanup_error}")
@@ -74,13 +80,11 @@ def compute_dockerfile_hash(dockerfile_folder: Path) -> str:
 
     This allows skipping rebuilds when the Dockerfile hasn't changed.
     """
-    import hashlib
-
     dockerfile_path = dockerfile_folder / "Dockerfile"
     if not dockerfile_path.exists():
         return ""
 
-    hasher = hashlib.md5()
+    hasher = hashlib.md5()  # noqa: S324 - MD5 used for non-security cache hashing
     hasher.update(dockerfile_path.read_bytes())
 
     # Also include .dockerignore if present
@@ -95,10 +99,11 @@ def get_image_dockerfile_hash(client: docker.DockerClient, image_name: str) -> s
     """Get the Dockerfile hash from an image's labels, if present."""
     try:
         image = client.images.get(image_name)
-        return image.labels.get("rdagent.dockerfile.hash")
+        labels = image.labels or {}
+        return labels.get("rdagent.dockerfile.hash")
     except docker.errors.ImageNotFound:
         return None
-    except Exception:
+    except docker.errors.APIError:
         return None
 
 
@@ -117,9 +122,7 @@ def should_rebuild_image(
     # Check if image exists
     try:
         image = client.images.get(image_name)
-        image_exists = True
     except docker.errors.ImageNotFound:
-        image_exists = False
         return True, "image not found"
 
     if not skip_if_exists:
@@ -131,7 +134,7 @@ def should_rebuild_image(
 
     # Smart rebuild: check if Dockerfile changed
     current_hash = compute_dockerfile_hash(dockerfile_folder)
-    stored_hash = image.labels.get("rdagent.dockerfile.hash")
+    stored_hash = (image.labels or {}).get("rdagent.dockerfile.hash")
 
     if stored_hash is None:
         # No hash stored - image was built before smart caching
@@ -151,30 +154,25 @@ class DockerBuildLock:
     and can cause race conditions. This lock ensures only one build happens at a time.
     """
 
-    def __init__(self, image_name: str, timeout: float = 600):
-        import tempfile
-
+    def __init__(self, image_name: str, timeout: float = 600) -> None:
         # Create lock file in temp directory, named after the image
         safe_name = image_name.replace("/", "_").replace(":", "_")
         self.lock_path = Path(tempfile.gettempdir()) / f"rdagent_docker_build_{safe_name}.lock"
         self.timeout = timeout
         self._lock_file = None
 
-    def __enter__(self):
-        import time
-
+    def __enter__(self) -> Self:
         start_time = time.time()
         while True:
             try:
                 # Try to create lock file exclusively
-                self._lock_file = open(self.lock_path, "x")
+                self._lock_file = self.lock_path.open("x")
                 self._lock_file.write(str(os.getpid()))
                 self._lock_file.flush()
-                return self
             except FileExistsError:
                 # Lock exists - check if stale
                 try:
-                    with open(self.lock_path) as f:
+                    with self.lock_path.open() as f:
                         pid = int(f.read().strip())
                     # Check if process still exists
                     os.kill(pid, 0)
@@ -188,20 +186,23 @@ class DockerBuildLock:
                 except (ValueError, ProcessLookupError, FileNotFoundError):
                     # Stale lock - break it
                     self._break_lock()
+            else:
+                return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object,
+    ) -> None:
         if self._lock_file:
             self._lock_file.close()
-        try:
+        with contextlib.suppress(FileNotFoundError):
             self.lock_path.unlink()
-        except FileNotFoundError:
-            pass
 
-    def _break_lock(self):
-        try:
+    def _break_lock(self) -> None:
+        with contextlib.suppress(FileNotFoundError):
             self.lock_path.unlink()
-        except FileNotFoundError:
-            pass
 
 
 # Normalize all bind paths in volumes to absolute paths using the workspace (working_dir).
@@ -246,7 +247,7 @@ def pull_image_with_progress(image: str) -> None:
                 progress_bars[layer_id].refresh()
 
         elif "status" in log:
-            print(log["status"])
+            rich_print(log["status"])
 
     for pb in progress_bars.values():
         pb.close()
@@ -298,7 +299,7 @@ class Env(Generic[ASpecificEnvConf]):
 
     conf: ASpecificEnvConf  # different env have different conf.
 
-    def __init__(self, conf: ASpecificEnvConf):
+    def __init__(self, conf: ASpecificEnvConf) -> None:
         self.conf = conf
 
     def zip_a_folder_into_a_file(self, folder_path: str, zip_file_path: str) -> None:
@@ -323,7 +324,7 @@ class Env(Generic[ASpecificEnvConf]):
             z.extractall(folder_path)
 
     @abstractmethod
-    def prepare(self, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
+    def prepare(self, *args: Any, **kwargs: Any) -> None:
         """
         Prepare for the environment based on it's configure
         """
@@ -660,7 +661,7 @@ class LocalEnv(Env[ASpecificLocalConf]):
             if entry is None:
                 entry = self.conf.default_entry
 
-            print(Rule("[bold green]LocalEnv Logs Begin[/bold green]", style="dark_orange"))
+            rich_print(Rule("[bold green]LocalEnv Logs Begin[/bold green]", style="dark_orange"))
             table = Table(title="Run Info", show_header=False)
             table.add_column("Key", style="bold cyan")
             table.add_column("Value", style="bold magenta")
@@ -668,7 +669,7 @@ class LocalEnv(Env[ASpecificLocalConf]):
             table.add_row("Local Path", local_path or "")
             table.add_row("Env", "\n".join(f"{k}:{v}" for k, v in env.items()))
             table.add_row("Volumes", "\n".join(f"{k}:\n  {v}" for k, v in volumes.items()))
-            print(table)
+            rich_print(table)
 
             cwd = Path(local_path).resolve() if local_path else None
             env = {k: str(v) if isinstance(v, int) else v for k, v in env.items()}
@@ -735,7 +736,7 @@ class LocalEnv(Env[ASpecificLocalConf]):
                 combined_output = out + err
 
             return_code = process.returncode
-            print(Rule("[bold green]LocalEnv Logs End[/bold green]", style="dark_orange"))
+            rich_print(Rule("[bold green]LocalEnv Logs End[/bold green]", style="dark_orange"))
 
             return combined_output, return_code
 
@@ -745,7 +746,7 @@ class CondaConf(LocalConf):
     default_entry: str = "python main.py"
 
     @model_validator(mode="after")
-    def change_bin_path(self, **data: Any) -> "CondaConf":
+    def change_bin_path(self, **data: Any) -> CondaConf:
         conda_path_result = subprocess.run(
             f"conda run -n {self.conda_env_name} --no-capture-output env | grep '^PATH='",
             check=False, capture_output=True,
@@ -758,6 +759,61 @@ class CondaConf(LocalConf):
 
 class MLECondaConf(CondaConf):
     enable_cache: bool = False  # aligning with the docker settings.
+
+
+class UvConf(LocalConf):
+    uv_env_name: str = "rdagent_uv"
+    default_entry: str = "python main.py"
+
+    @model_validator(mode="after")
+    def change_bin_path(self, **data: Any) -> UvConf:
+        # Assumes the venv is created in the standard location by uv
+        venv_path = Path.cwd() / ".venv"
+        if venv_path.exists():
+             self.bin_path = str(venv_path / "bin")
+        return self
+
+
+class UvEnv(LocalEnv[UvConf]):
+    """
+    Environment management using 'uv' for faster dependency resolution and installation.
+    """
+
+    def prepare(self) -> None:
+        """Prepare the uv environment."""
+        try:
+            # Check if uv is installed
+            subprocess.run(["uv", "--version"], check=True, capture_output=True)
+
+            # Create venv if it doesn't exist
+            if not (Path.cwd() / ".venv").exists():
+                rich_print("[yellow]Creating uv venv...[/yellow]")
+                subprocess.check_call("uv venv", shell=True)
+
+            # Install dependencies
+            # We use 'uv pip install' which is much faster than standard pip
+            rich_print("[yellow]Installing dependencies with uv...[/yellow]")
+            
+            # Install base dependencies
+            subprocess.check_call("uv pip install --upgrade pip cython", shell=True)
+            
+            # Install Qlib from source
+            subprocess.check_call(
+                "uv pip install git+https://github.com/microsoft/qlib.git@3e72593b8c985f01979bebcf646658002ac43b00",
+                shell=True,
+            )
+            
+            # Install other requirements
+            subprocess.check_call(
+                "uv pip install catboost xgboost scipy==1.11.4 tables torch",
+                shell=True,
+            )
+            
+        except subprocess.CalledProcessError as e:
+            rich_print(f"[red]Failed to prepare uv env: {e}[/red]")
+        except FileNotFoundError:
+             rich_print("[red]uv not found. Please install uv first.[/red]")
+             raise
 
 
 ## Docker Environment -----
@@ -813,27 +869,29 @@ class QlibCondaEnv(LocalEnv[QlibCondaConf]):
     def prepare(self) -> None:
         """Prepare the conda environment if not already created."""
         try:
-            envs = subprocess.run("conda env list", check=False, capture_output=True, text=True, shell=True)
+            envs = subprocess.run(  # noqa: S602 - shell=True needed for conda
+                "conda env list", check=False, capture_output=True, text=True, shell=True
+            )
             if self.conf.conda_env_name not in envs.stdout:
-                print(f"[yellow]Conda env '{self.conf.conda_env_name}' not found, creating...[/yellow]")
-                subprocess.check_call(
+                rich_print(f"[yellow]Conda env '{self.conf.conda_env_name}' not found, creating...[/yellow]")
+                subprocess.check_call(  # noqa: S602 - shell=True needed for conda
                     f"conda create -y -n {self.conf.conda_env_name} python=3.10",
                     shell=True,
                 )
-                subprocess.check_call(
+                subprocess.check_call(  # noqa: S602 - shell=True needed for conda
                     f"conda run -n {self.conf.conda_env_name} pip install --upgrade pip cython",
                     shell=True,
                 )
-                subprocess.check_call(
+                subprocess.check_call(  # noqa: S602 - shell=True needed for conda
                     f"conda run -n {self.conf.conda_env_name} pip install git+https://github.com/microsoft/qlib.git@3e72593b8c985f01979bebcf646658002ac43b00",
                     shell=True,
                 )
-                subprocess.check_call(
+                subprocess.check_call(  # noqa: S602 - shell=True needed for conda
                     f"conda run -n {self.conf.conda_env_name} pip install catboost xgboost scipy==1.11.4 tables torch",
                     shell=True,
                 )
-        except Exception as e:
-            print(f"[red]Failed to prepare conda env: {e}[/red]")
+        except subprocess.CalledProcessError as e:
+            rich_print(f"[red]Failed to prepare conda env: {e}[/red]")
 
 
 class QlibDockerConf(DockerConf):
@@ -917,7 +975,7 @@ class MLEBDockerConf(DockerConf):
 class DockerEnv(Env[DockerConf]):
     # TODO: Save the output into a specific file
 
-    def prepare(self, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
+    def prepare(self, *args: Any, **kwargs: Any) -> None:
         """
         Download image if it doesn't exist, or rebuild if Dockerfile changed.
 
@@ -926,7 +984,8 @@ class DockerEnv(Env[DockerConf]):
         - If image exists but Dockerfile changed: rebuild
         - If image doesn't exist: build
         """
-        import os
+        # args and kwargs are unused but required by abstract method signature
+        _ = args, kwargs
 
         client = docker.from_env()
 
@@ -965,8 +1024,6 @@ class DockerEnv(Env[DockerConf]):
 
                         # Pre-build cleanup if enabled
                         if self.conf.auto_cleanup_before_build:
-                            from rdagent.utils.docker_cleanup import pre_build_cleanup
-
                             pre_build_cleanup()
 
                         # Enable BuildKit for parallel builds and better caching
@@ -1120,7 +1177,7 @@ class DockerEnv(Env[DockerConf]):
             )
             assert container is not None  # Ensure container was created successfully
             logs = container.logs(stream=True)
-            print(Rule("[bold green]Docker Logs Begin[/bold green]", style="dark_orange"))
+            rich_print(Rule("[bold green]Docker Logs Begin[/bold green]", style="dark_orange"))
             table = Table(title="Run Info", show_header=False)
             table.add_column("Key", style="bold cyan")
             table.add_column("Value", style="bold magenta")
@@ -1130,36 +1187,37 @@ class DockerEnv(Env[DockerConf]):
             table.add_row("Entry", entry)
             table.add_row("Env", "\n".join(f"{k}:{v}" for k, v in env.items()))
             table.add_row("Volumes", "\n".join(f"{k}:\n  {v}" for k, v in volumes.items()))
-            print(table)
+            rich_print(table)
             for log in logs:
                 decoded_log = log.strip().decode()
                 Console().print(decoded_log, markup=False)
                 log_output += decoded_log + "\n"
             exit_status = container.wait()["StatusCode"]
-            print(Rule("[bold green]Docker Logs End[/bold green]", style="dark_orange"))
+            rich_print(Rule("[bold green]Docker Logs End[/bold green]", style="dark_orange"))
             return log_output, exit_status
         except docker.errors.ContainerError as e:
-            raise RuntimeError(f"Error while running the container: {e}")
-        except docker.errors.ImageNotFound:
-            raise RuntimeError("Docker image not found.")
+            msg = f"Error while running the container: {e}"
+            raise RuntimeError(msg) from e
+        except docker.errors.ImageNotFound as e:
+            msg = "Docker image not found."
+            raise RuntimeError(msg) from e
         except docker.errors.APIError as e:
-            raise RuntimeError(f"Error while running the container: {e}")
+            msg = f"Error while running the container: {e}"
+            raise RuntimeError(msg) from e
         finally:
             cleanup_container(container)
             # Post-run cleanup if enabled
             if self.conf.auto_cleanup_after_run:
-                from rdagent.utils.docker_cleanup import post_run_cleanup
-
                 post_run_cleanup()
 
 
 class QTDockerEnv(DockerEnv):
     """Qlib Torch Docker"""
 
-    def __init__(self, conf: DockerConf = QlibDockerConf()):
-        super().__init__(conf)
+    def __init__(self, conf: DockerConf | None = None) -> None:
+        super().__init__(conf if conf is not None else QlibDockerConf())
 
-    def prepare(self, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
+    def prepare(self, *args: Any, **kwargs: Any) -> None:
         """
         Download image & data if it doesn't exist.
 
@@ -1168,7 +1226,7 @@ class QTDockerEnv(DockerEnv):
         - us_data: US market data (auto-downloaded)
         - alpaca_us: Alpaca-sourced US data (must be pre-downloaded)
         """
-        super().prepare()
+        super().prepare(*args, **kwargs)
         qlib_data_path = next(iter(self.conf.extra_volumes.keys()))
 
         # Get data region from config (which reads from env var)
@@ -1179,14 +1237,17 @@ class QTDockerEnv(DockerEnv):
             logger.info(f"Data already exists at {data_path}. Download skipped.")
             return
 
+        # Base command for qlib data download
+        base_cmd = "python -m qlib.run.get_data qlib_data"
+
         # Handle different data regions
         if data_region == "cn_data":
             logger.info("Downloading Chinese market data...")
-            cmd = "python -m qlib.run.get_data qlib_data --target_dir ~/.qlib/qlib_data/cn_data --region cn --interval 1d --delete_old False"
+            cmd = f"{base_cmd} --target_dir ~/.qlib/qlib_data/cn_data --region cn --interval 1d --delete_old False"
             self.check_output(entry=cmd)
         elif data_region == "us_data":
             logger.info("Downloading US market data...")
-            cmd = "python -m qlib.run.get_data qlib_data --target_dir ~/.qlib/qlib_data/us_data --region us --interval 1d --delete_old False"
+            cmd = f"{base_cmd} --target_dir ~/.qlib/qlib_data/us_data --region us --interval 1d --delete_old False"
             self.check_output(entry=cmd)
         elif data_region in ("alpaca_us", "alpaca"):
             # Alpaca data must be pre-downloaded by user
@@ -1201,19 +1262,21 @@ class QTDockerEnv(DockerEnv):
             )
             if not (Path(qlib_data_path) / "qlib_data" / "cn_data").exists():
                 logger.info("Downloading Chinese market data as fallback...")
-                cmd = "python -m qlib.run.get_data qlib_data --target_dir ~/.qlib/qlib_data/cn_data --region cn --interval 1d --delete_old False"
+                cmd = f"{base_cmd} --target_dir ~/.qlib/qlib_data/cn_data --region cn --interval 1d --delete_old False"
                 self.check_output(entry=cmd)
 
 
 class KGDockerEnv(DockerEnv):
     """Kaggle Competition Docker"""
 
-    def __init__(self, competition: str | None = None, conf: DockerConf = KGDockerConf()):
-        super().__init__(conf)
+    def __init__(self, competition: str | None = None, conf: DockerConf | None = None) -> None:
+        # competition parameter is reserved for future use (e.g., competition-specific config)
+        _ = competition
+        super().__init__(conf if conf is not None else KGDockerConf())
 
 
 class MLEBDockerEnv(DockerEnv):
     """MLEBench Docker"""
 
-    def __init__(self, conf: DockerConf = MLEBDockerConf()):
-        super().__init__(conf)
+    def __init__(self, conf: DockerConf | None = None) -> None:
+        super().__init__(conf if conf is not None else MLEBDockerConf())

@@ -26,7 +26,7 @@ def cleanup_all(
     dry_run: Annotated[
         bool, typer.Option("--dry-run", "-n", help="Show what would be cleaned without actually cleaning")
     ] = False,
-):
+) -> None:
     """Clean up all Docker resources used by RD-Agent."""
     manager = DockerCleanupManager()
 
@@ -48,7 +48,7 @@ def cleanup_all(
 
 
 @app.command(name="dangling")
-def cleanup_dangling():
+def cleanup_dangling() -> None:
     """Clean up dangling (untagged) Docker images."""
     manager = DockerCleanupManager()
     result = manager.cleanup_dangling_images()
@@ -58,7 +58,7 @@ def cleanup_dangling():
 
 
 @app.command(name="containers")
-def cleanup_containers():
+def cleanup_containers() -> None:
     """Clean up stopped Docker containers."""
     manager = DockerCleanupManager()
     result = manager.cleanup_stopped_containers()
@@ -68,7 +68,7 @@ def cleanup_containers():
 
 
 @app.command(name="cache")
-def cleanup_cache():
+def cleanup_cache() -> None:
     """Clean up Docker build cache."""
     manager = DockerCleanupManager()
     result = manager.cleanup_build_cache()
@@ -79,7 +79,7 @@ def cleanup_cache():
 @app.command(name="images")
 def cleanup_images(
     prefix: Annotated[str, typer.Option("--prefix", "-p", help="Image name prefix to match")] = "local_",
-):
+) -> None:
     """Clean up RD-Agent Docker images (default: local_* images)."""
     manager = DockerCleanupManager()
     removed = manager.cleanup_rdagent_images(prefix=prefix)
@@ -90,7 +90,7 @@ def cleanup_images(
 
 
 @app.command(name="status")
-def status():
+def status() -> None:
     """Show Docker disk usage summary."""
     manager = DockerCleanupManager()
     usage = manager.get_disk_usage()
