@@ -2,7 +2,7 @@ import os
 
 from pydantic_settings import SettingsConfigDict
 from rdagent.components.coder.CoSTEER.config import CoSTEERSettings
-from rdagent.utils.env import CondaConf, Env, LocalEnv
+from rdagent.utils.env import CondaConf, Env, LocalEnv, QTDockerEnv, UvConf, UvEnv
 
 
 class FactorCoSTEERSettings(CoSTEERSettings):
@@ -26,6 +26,9 @@ class FactorCoSTEERSettings(CoSTEERSettings):
     python_bin: str = "python"
     """Path to the Python binary"""
 
+    env_type: str = "conda"  # or "docker" or "uv"
+    """Environment to run factor code in coder and runner: 'conda' for local conda env, 'docker' for Docker container, 'uv' for local uv env"""
+
 
 def get_factor_env(
     conf_type: str | None = None,
@@ -34,9 +37,20 @@ def get_factor_env(
     enable_cache: bool | None = None,
 ) -> Env:
     conf = FactorCoSTEERSettings()
-    if hasattr(conf, "python_bin"):
-        env = LocalEnv(conf=(CondaConf(conda_env_name=os.environ.get("CONDA_DEFAULT_ENV"))))
-    env.conf.extra_volumes = extra_volumes.copy()
+
+    if conf.env_type == "docker":
+        env = QTDockerEnv()
+    elif conf.env_type == "uv":
+        env = UvEnv(conf=UvConf())
+    elif conf.env_type == "conda":
+        # For conda, use CONDA_DEFAULT_ENV or fall back to "base"
+        conda_env_name = os.environ.get("CONDA_DEFAULT_ENV", "base")
+        env = LocalEnv(conf=CondaConf(conda_env_name=conda_env_name))
+    else:
+        raise ValueError(f"Unknown env type: {conf.env_type}")
+
+    if extra_volumes:  # Only override if non-empty
+        env.conf.extra_volumes = extra_volumes.copy()
     env.conf.running_timeout_period = running_timeout_period
     if enable_cache is not None:
         env.conf.enable_cache = enable_cache
