@@ -7,7 +7,6 @@ Enable via environment variables with POETIQ_ prefix.
 from __future__ import annotations
 
 from pydantic_settings import SettingsConfigDict
-
 from rdagent.core.conf import ExtendedBaseSettings
 
 

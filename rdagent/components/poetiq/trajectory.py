@@ -55,7 +55,6 @@ class TrajectoryFormatter:
         Returns:
             Formatted trajectory string
         """
-        from rdagent.components.poetiq.conf import POETIQ_SETTINGS
 
         entries = self._extract_entries(trace)
 

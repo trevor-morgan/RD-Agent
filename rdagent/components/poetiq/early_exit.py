@@ -65,9 +65,7 @@ class EarlyExitChecker:
 
             # Check threshold
             threshold_met = False
-            if direction == "higher" and value >= threshold:
-                threshold_met = True
-            elif direction == "lower" and value <= threshold:
+            if (direction == "higher" and value >= threshold) or (direction == "lower" and value <= threshold):
                 threshold_met = True
 
             if threshold_met:
@@ -78,9 +76,8 @@ class EarlyExitChecker:
                     f"(consecutive: {self._consecutive_successes})"
                 )
                 return True, reason
-            else:
-                self._consecutive_successes = 0
-                return False, ""
+            self._consecutive_successes = 0
+            return False, ""
 
         except (KeyError, ValueError, TypeError, AttributeError):
             return False, ""
