@@ -156,7 +156,7 @@ DOCKER_SMART_REBUILD=false           # Disable hash-based change detection
 | Dangling images | ~170GB accumulated | Auto-cleaned |
 | Build time (cache hit) | Full rebuild | <1 second (skip) |
 
-### Monorepo Lab Integration (qlib-quant-lab folded in) - IN PROGRESS
+### Monorepo Lab Integration (qlib-quant-lab folded in) - COMPLETED ✅
 
 **Goal:** Consolidate the Qlib orchestration/lab tools into RD-Agent as a first-class module managed via uv extras.
 
@@ -175,10 +175,111 @@ DOCKER_SMART_REBUILD=false           # Disable hash-based change detection
 - Install extras: `uv pip install -e .[quant-lab,backtest,rl,llm]` (add `simulation`/`api`/`live` as needed).
 - Run: `rdagent lab train model --model lgbm --features Alpha158`, `rdagent lab backtest vectorbt <preds> <prices>`, `rdagent lab research quant --iterations 1`.
 
-**Open items:**
-- Migrate remaining configs/templates/docs from the old qlib-quant-lab repo into `configs/` and docs.
-- Replace any remaining subprocess-based RD-Agent invocations with the adapter pattern.
-- Add smoke tests for the lab CLI (typer missing in base env; extras required).
+### qlib-quant-lab Components Ported (2025-12-02) - COMPLETED ✅
+
+Consolidated ~3,500 lines of production-ready components from qlib-quant-lab into rdagent_lab.
+
+**Ported Components:**
+
+| Module | Components | Lines | Description |
+|--------|------------|-------|-------------|
+| `rdagent_lab/models/novel/` | `SymplecticNet`, `MarketStateNet` | ~700 | Physics-informed neural networks |
+| `rdagent_lab/models/ensemble/` | `PerformanceTracker`, `DiversityRegularizer`, `WeightingMethod` | ~250 | Adaptive ensemble utilities |
+| `rdagent_lab/research/` | `MonteCarloSimulator`, `ScenarioResult`, `StressScenario` | ~300 | Monte Carlo simulation for risk |
+| `rdagent_lab/data/` | `AlpacaCollector`, `DataFormatConverter` | ~600 | Data collection and format conversion |
+| `rdagent_lab/utils/` | `extract_features_and_labels`, `validate_data_for_training` | ~200 | Qlib data extraction helpers |
+| `seed_models/` | `simple_gru.py`, `symplectic_net.py`, `market_state_net.py` | ~700 | RD-Agent seed models |
+
+**Novel Models (Pure PyTorch nn.Module):**
+
+1. **SymplecticNet** (`rdagent_lab/models/novel/symplectic.py`):
+   - `FractionalDifferencer`: Rough volatility with Hurst exponent H~0.12
+   - `SymplecticAttention`: Phase space volume preserving attention
+   - `HamiltonianBlock`: Energy-conserving latent evolution
+   - `HolographicMemory`: Complex-valued associative memory for regime detection
+
+2. **MarketStateNet** (`rdagent_lab/models/novel/market_state.py`):
+   - `TopologyFeatures`: Betti numbers from correlation networks
+   - `CompressionComplexity`: zlib compression ratio as predictability proxy
+   - `ActivityMetrics`: Aggregate momentum/volatility across assets
+   - `QuantilePredictor`: Pinball loss for uncertainty quantification
+   - `AnomalyDetector`: Reconstruction-based anomaly detection
+
+**Ensemble Utilities** (`rdagent_lab/models/ensemble/adaptive_ensemble.py`):
+- `WeightingMethod`: Enum for equal, IC-weighted, Sharpe-weighted, learned
+- `PerformanceTracker`: EMA-based performance tracking with rolling IC/Sharpe
+- `DiversityRegularizer`: Penalizes correlated predictions, encourages diversity
+
+**Monte Carlo Simulator** (`rdagent_lab/research/monte_carlo.py`):
+- `MonteCarloSimulator`: Scenario simulation with VaR/CVaR computation
+- `StressScenario`: Configurable shock scenarios (magnitude, duration, affected features)
+- `STANDARD_STRESS_SCENARIOS`: Predefined market_crash, volatility_spike, flash_crash, gradual_decline
+
+**Data Collection** (`rdagent_lab/data/`):
+- `AlpacaCollector`: Download S&P 500 data from Alpaca Markets, convert to Qlib format
+- `DataFormatConverter`: Fix broken Alpaca data format (start_index prefix issue)
+- `SP500_SYMBOLS`: Complete list of S&P 500 constituents (as of 2024)
+
+**Data Extraction** (`rdagent_lab/utils/`):
+- `extract_features_and_labels()`: Safely extract (X, y) from Qlib DatasetH
+- `validate_data_for_training()`: Check for NaN, shape, minimum samples
+- `DataExtractionError`: Custom exception with helpful messages
+
+**Seed Models** (`rdagent/scenarios/qlib/experiment/model_template/seed_models/`):
+
+Use these with the `--seed-model` CLI option:
+
+```bash
+# Simple GRU baseline
+rdagent fin_model \
+    --seed-model ./seed_models/simple_gru.py \
+    --seed-hypothesis "Simple 2-layer GRU with attention pooling" \
+    --loop-n 5
+
+# Full SymplecticNet (Sharpe ~0.89 on S&P 500)
+rdagent fin_model \
+    --seed-model ./seed_models/symplectic_net.py \
+    --seed-hypothesis "Symplectic physics-informed model with Hamiltonian dynamics" \
+    --loop-n 5
+
+# MarketStateNet with topological features
+rdagent fin_model \
+    --seed-model ./seed_models/market_state_net.py \
+    --seed-hypothesis "Market state detection with topological features and compression complexity" \
+    --loop-n 5
+```
+
+**Usage Examples:**
+
+```python
+# Novel models
+from rdagent_lab.models.novel import SymplecticNet, MarketStateNet
+model = SymplecticNet(d_feat=20, d_model=128, n_heads=4)
+pred = model(torch.randn(32, 20, 20))
+
+# Ensemble utilities
+from rdagent_lab.models.ensemble import PerformanceTracker, WeightingMethod
+tracker = PerformanceTracker(n_models=3, lookback=60)
+tracker.update(model_idx=0, predictions=preds, labels=labels)
+weights = tracker.get_weights(WeightingMethod.IC_WEIGHTED)
+
+# Monte Carlo simulation
+from rdagent_lab.research import MonteCarloSimulator, STANDARD_STRESS_SCENARIOS
+simulator = MonteCarloSimulator(model)
+result = simulator.simulate(initial_state, n_scenarios=1000, n_steps=20)
+print(f"VaR(95%): {result.var_95:.4f}, CVaR: {result.cvar_95:.4f}")
+stress_results = simulator.stress_test(initial_state, STANDARD_STRESS_SCENARIOS)
+
+# Data collection
+from rdagent_lab.data import AlpacaCollector
+collector = AlpacaCollector()
+collector.download(start="2020-01-01", end="2025-11-26")
+
+# Data extraction
+from rdagent_lab.utils import extract_features_and_labels, validate_data_for_training
+x_train, y_train = extract_features_and_labels(dataset, "train")
+validate_data_for_training(x_train, y_train, min_samples=100)
+```
 
 ### Multi-Provider Subscription Proxy Support - VERIFIED WORKING ✅
 

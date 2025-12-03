@@ -793,22 +793,23 @@ class UvEnv(LocalEnv[UvConf]):
             # Install dependencies
             # We use 'uv pip install' which is much faster than standard pip
             rich_print("[yellow]Installing dependencies with uv...[/yellow]")
-            
+
             # Install base dependencies
             subprocess.check_call("uv pip install --upgrade pip cython", shell=True)
-            
+
             # Install Qlib from source
             subprocess.check_call(
                 "uv pip install git+https://github.com/microsoft/qlib.git@3e72593b8c985f01979bebcf646658002ac43b00",
                 shell=True,
             )
-            
+
             # Install other requirements
+            # Note: scipy version is not pinned to avoid conflicts with pyqlib/quantstats
             subprocess.check_call(
-                "uv pip install catboost xgboost scipy==1.11.4 tables torch",
+                "uv pip install catboost xgboost scipy tables torch",
                 shell=True,
             )
-            
+
         except subprocess.CalledProcessError as e:
             rich_print(f"[red]Failed to prepare uv env: {e}[/red]")
         except FileNotFoundError:
@@ -886,8 +887,9 @@ class QlibCondaEnv(LocalEnv[QlibCondaConf]):
                     f"conda run -n {self.conf.conda_env_name} pip install git+https://github.com/microsoft/qlib.git@3e72593b8c985f01979bebcf646658002ac43b00",
                     shell=True,
                 )
+                # Note: scipy version is not pinned to avoid conflicts with pyqlib/quantstats
                 subprocess.check_call(  # noqa: S602 - shell=True needed for conda
-                    f"conda run -n {self.conf.conda_env_name} pip install catboost xgboost scipy==1.11.4 tables torch",
+                    f"conda run -n {self.conf.conda_env_name} pip install catboost xgboost scipy tables torch",
                     shell=True,
                 )
         except subprocess.CalledProcessError as e:

@@ -18,6 +18,7 @@ RUN git clone https://github.com/microsoft/qlib.git /workspace/qlib \
 WORKDIR /workspace/qlib
 
 # Consolidated pip installs for better layer caching
+# Note: scipy version is not pinned to avoid conflicts with pyqlib dependencies
 RUN python -m pip install --no-cache-dir --upgrade cython \
     && python -m pip install --no-cache-dir -e . \
-    && pip install --no-cache-dir catboost xgboost scipy==1.11.4 tables
+    && pip install --no-cache-dir catboost xgboost scipy tables
