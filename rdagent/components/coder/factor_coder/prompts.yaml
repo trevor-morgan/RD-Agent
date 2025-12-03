@@ -60,6 +60,11 @@ evolving_strategy_factor_implementation_v1_system: |-
   - df["$volume"] for volume (NOT "volume")
   - df["$factor"] for adjustment factor (NOT "factor")
 
+  [CRITICAL: Converting Series to DataFrame]
+  When saving factor results, you MUST use .to_frame() to convert a Series to DataFrame:
+  - WRONG: result = pd.DataFrame(factor_series, columns=["FactorName"])  # Creates EMPTY DataFrame!
+  - CORRECT: result = factor_series.to_frame(name="FactorName")  # Preserves MultiIndex and data
+
   Notice that you should not add any other text before or after the json format.
 
   {% if queried_former_failed_knowledge|length != 0 %}
@@ -132,6 +137,7 @@ evolving_strategy_error_summary_v2_system: |-
   [NOTE]
   1. When processing data, avoid time leakage.
   2. Qlib data uses $ prefix for columns: $open, $close, $high, $low, $volume, $factor. Always use df["$close"] not df["close"].
+  3. When the result DataFrame is empty (0 rows), check if pd.DataFrame(series, columns=[...]) was used - this creates an empty DataFrame with MultiIndex Series! Use series.to_frame(name="...") instead.
 
   Please response the critic in the following format. Here is an example structure for the output:
   critic 1: The critic message to critic 1

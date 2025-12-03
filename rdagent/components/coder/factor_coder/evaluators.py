@@ -1,5 +1,6 @@
 import re
 
+import pandas as pd
 from rdagent.components.coder.CoSTEER.evaluators import (
     CoSTEEREvaluator,
     CoSTEERSingleFeedbackDeprecated,
@@ -10,6 +11,10 @@ from rdagent.components.coder.factor_coder.eva_utils import (
     FactorValueEvaluator,
 )
 from rdagent.components.coder.factor_coder.factor import FactorTask
+from rdagent.components.coder.pitfall_detector import (
+    RuntimeDiagnostics,
+    lint_factor_code,
+)
 from rdagent.core.evolving_framework import QueriedKnowledge
 from rdagent.core.experiment import Workspace
 
@@ -67,9 +72,38 @@ class FactorEvaluatorForCoder(CoSTEEREvaluator):
             [line for line in execution_feedback.split("\n") if "warning" not in line.lower()]
         )
 
-        # 2. Get factor value feedback
-        if gen_df is None:
-            factor_feedback.value_feedback = "No factor value generated, skip value evaluation."
+        # 2. Get factor value feedback with pitfall diagnosis
+        code = implementation.all_codes if hasattr(implementation, "all_codes") else ""
+
+        # Check for empty DataFrame (common pitfall result)
+        is_empty_result = False
+        if gen_df is not None and isinstance(gen_df, pd.DataFrame) and gen_df.empty:
+            is_empty_result = True
+
+        if gen_df is None or is_empty_result:
+            # Run pitfall diagnostics to provide actionable feedback
+            diagnostics = RuntimeDiagnostics()
+            if gen_df is None:
+                # Create empty DataFrame for diagnosis
+                empty_df = pd.DataFrame()
+                diagnosis = diagnostics.diagnose_empty_dataframe(empty_df, code)
+            else:
+                diagnosis = diagnostics.diagnose_empty_dataframe(gen_df, code)
+
+            # Format diagnostic feedback
+            diag_feedback = f"No factor value generated.\n\n=== Root Cause Analysis ===\n{diagnosis.cause}\n\n=== Suggested Fix ===\n{diagnosis.fix}"
+
+            if diagnosis.pitfall_id:
+                diag_feedback += f"\n\n=== Pitfall ID ===\n{diagnosis.pitfall_id} (confidence: {diagnosis.confidence:.0%})"
+
+            # Also run static linting on the code
+            lint_results = lint_factor_code(code)
+            if lint_results:
+                diag_feedback += "\n\n=== Code Linting Issues ===\n"
+                for result in lint_results:
+                    diag_feedback += f"- [{result.pitfall.id}] Line {result.line_number}: {result.pitfall.name}\n  Fix: {result.suggested_fix}\n"
+
+            factor_feedback.value_feedback = diag_feedback
             factor_feedback.value_generated_flag = False
             decision_from_value_check = None
         else:
