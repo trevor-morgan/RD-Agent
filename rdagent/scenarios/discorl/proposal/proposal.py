@@ -298,6 +298,20 @@ class DiscoRLHypothesis2Experiment(Hypothesis2Experiment[DiscoRLExperiment]):
 
     def _inject_training_code(self, experiment: DiscoRLExperiment, config: ExecutionConfig):
         """Inject the training script into the workspace."""
+        # Convert config to Python literal (not JSON) to avoid true/false vs True/False issues
+        config_dict = config.to_dict()
+        config_str = "{\n"
+        for k, v in config_dict.items():
+            if isinstance(v, bool):
+                config_str += f'        "{k}": {v},\n'
+            elif isinstance(v, str):
+                config_str += f'        "{k}": "{v}",\n'
+            elif isinstance(v, list):
+                config_str += f'        "{k}": {v},\n'
+            else:
+                config_str += f'        "{k}": {v},\n'
+        config_str += "    }"
+
         training_code = f'''#!/usr/bin/env python3
 """Auto-generated DiscoRL training script."""
 
@@ -310,7 +324,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 def main():
     # Configuration
-    config = {json.dumps(config.to_dict(), indent=4)}
+    config = {config_str}
 
     try:
         from disco_rl.rdagent_integration import DiscoTrainer, ExecutionExperimentConfig
@@ -319,7 +333,7 @@ def main():
         exp_config = ExecutionExperimentConfig.from_dict(config)
 
         # Create trainer
-        trainer = DiscoTrainer(exp_config, use_disco={str(config.use_disco).lower()})
+        trainer = DiscoTrainer(exp_config, use_disco={config.use_disco})
 
         # Train
         print("Starting training...")
